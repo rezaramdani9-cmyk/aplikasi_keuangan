@@ -889,7 +889,7 @@
     // Update UI berdasarkan data
     function updateUI() {
       updateFinancialSummary();
-      // updateDaftarTransaksi(); // This will be called by filterTransaksi with default 'semua'
+      updateDaftarTransaksi(); // <--- PASTIKAN BARIS INI TIDAK DIKOMENTARI
       updateTransaksiTerakhir();
       renderCharts();
       renderHistoricalInitialBalances();
@@ -1389,7 +1389,7 @@
         document.getElementById('search-transaksi').value = '';
         // Set 'Semua' filter button as active by default
         const allFilterButton = document.querySelector('#transaksi-section .filter-button[onclick*="\'semua\'"]');
-        filterTransaksi('semua', allFilterButton);
+        filterTransaksi('semua', allFilterButton); // <--- PASTIKAN BARIS INI ADA DAN BENAR
       }
     }
 
@@ -1536,6 +1536,7 @@
       saveDatabase();
       calculateAndStoreMonthlyInitialBalance();
       updateUI();
+      filterTransaksi('semua'); // <--- TAMBAHKAN BARIS INI
 
       this.reset();
       document.getElementById('jenis-transaksi').value = 'pemasukan';
@@ -1618,6 +1619,7 @@
         saveDatabase();
         calculateAndStoreMonthlyInitialBalance();
         updateUI();
+        filterTransaksi('semua'); // <--- TAMBAHKAN BARIS INI
         closeModal();
 
         showNotification('Perubahan transaksi berhasil disimpan!', 'success');
@@ -1639,6 +1641,7 @@
         saveDatabase();
         calculateAndStoreMonthlyInitialBalance();
         updateUI();
+        filterTransaksi('semua'); // <--- TAMBAHKAN BARIS INI
         showNotification('Transaksi berhasil dihapus!', 'success');
       }
     }
