@@ -1,0 +1,2727 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aplikasi Keuangan Reza Ramdani Putra</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    @media (max-width: 640px) {
+      .responsive-table {
+        font-size: 0.8rem;
+      }
+      .responsive-table th, .responsive-table td {
+        padding: 0.5rem;
+      }
+    }
+    .highlight-income {
+      background-color: rgba(74, 222, 128, 0.2); /* Tailwind green-400 with opacity */
+    }
+    .highlight-expense {
+      background-color: rgba(248, 113, 113, 0.2); /* Tailwind red-400 with opacity */
+    }
+    /* Style for custom notifications */
+    .notification {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.375rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      z-index: 1000;
+      display: none; /* Hidden by default */
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+    .notification.show {
+      display: block;
+      opacity: 1;
+    }
+    .notification.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .notification.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .notification.info {
+      background-color: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    .input-error-message {
+      color: #ef4444; /* red-500 */
+      font-size: 0.75rem; /* text-xs */
+      margin-top: 0.25rem; /* mt-1 */
+    }
+    .filter-button.active {
+        background-color: #3B82F6; /* blue-500 */
+        color: white;
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="container mx-auto px-4 py-8 max-w-6xl">
+    <div class="bg-white rounded-lg shadow-lg p-6">
+      <div class="flex flex-col md:flex-row justify-between items-center mb-8">
+        <div class="mb-4 md:mb-0">
+          <h1 class="text-2xl font-bold text-gray-800">Keuangan Reza Ramdani Putra</h1>
+          <p class="text-gray-600">Kelola pemasukan, pengeluaran, dan aset</p>
+        </div>
+        <div class="flex space-x-2">
+          <button onclick="toggleSection('dashboard')" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+            Dashboard
+		</button>
+          <button onclick="toggleSection('budgeting')" class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">
+            Anggaran
+		</button>
+          <button onclick="toggleSection('loans')" class="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600">
+            Pinjaman
+          </button>
+          <button onclick="toggleSection('transaksi')" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+            Transaksi
+          </button>
+          <button onclick="toggleSection('laporan')" class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-700">
+            Laporan
+          </button>
+          <button onclick="toggleSection('database')" class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">
+            Database
+          </button>
+        </div>
+      </div>
+
+      <!-- Dashboard Section -->
+      <div id="dashboard-section" class="section-content">
+        <!-- Ringkasan Keuangan Bulan Ini -->
+        <div class="mb-8">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Ringkasan Keuangan Bulan Ini</h2>
+          <div class="bg-white p-6 rounded-lg shadow">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="financial-summary-grid">
+              <!-- Ringkasan akan diisi oleh JavaScript -->
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-8">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">📊 Analisis Komposisi Keuangan</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Grafik Bulan Berjalan -->
+            <div class="bg-white p-6 rounded-lg shadow">
+              <h3 class="font-semibold text-gray-700 mb-4">Bulan Berjalan: <span id="current-month-name"></span></h3>
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                  <h4 class="text-md font-medium text-gray-600 mb-2">Komposisi Pengeluaran</h4>
+                  <canvas id="chartPengeluaranBulanIni" style="max-width:300px; max-height:300px; margin: auto;"></canvas>
+                </div>
+                <div>
+                  <h4 class="text-md font-medium text-gray-600 mb-2">Komposisi Pemasukan</h4>
+                  <canvas id="chartPemasukanBulanIni" style="max-width:300px; max-height:300px; margin: auto;"></canvas>
+                </div>
+              </div>
+            </div>
+            <!-- Grafik Bulan Sebelumnya -->
+            <div class="bg-white p-6 rounded-lg shadow">
+              <h3 class="font-semibold text-gray-700 mb-4">Bulan Sebelumnya: <span id="previous-month-name"></span></h3>
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                  <h4 class="text-md font-medium text-gray-600 mb-2">Komposisi Pengeluaran</h4>
+                  <canvas id="chartPengeluaranBulanLalu" style="max-width:300px; max-height:300px; margin: auto;"></canvas>
+                </div>
+                <div>
+                  <h4 class="text-md font-medium text-gray-600 mb-2">Komposisi Pemasukan</h4>
+                  <canvas id="chartPemasukanBulanLalu" style="max-width:300px; max-height:300px; margin: auto;"></canvas>
+                </div>
+              </div>
+            </div>
+            <!-- Grafik Akumulasi 1 Tahun -->
+            <div class="bg-white p-6 rounded-lg shadow">
+              <h3 class="font-semibold text-gray-700 mb-4">Akumulasi 1 Tahun Terakhir</h3>
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                  <h4 class="text-md font-medium text-gray-600 mb-2">Komposisi Pengeluaran</h4>
+                  <canvas id="chartPengeluaranTahunan" style="max-width:300px; max-height:300px; margin: auto;"></canvas>
+                </div>
+                <div>
+                  <h4 class="text-md font-medium text-gray-600 mb-2">Komposisi Pemasukan</h4>
+                  <canvas id="chartPemasukanTahunan" style="max-width:300px; max-height:300px; margin: auto;"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-white p-6 rounded-lg shadow">
+            <h3 class="font-semibold text-gray-700 mb-4">Transaksi Terakhir</h3>
+            <div class="overflow-x-auto">
+              <table class="min-w-full responsive-table">
+                <thead class="bg-gray-100">
+                  <tr>
+                    <th class="py-2 px-4 text-left">Tanggal</th>
+                    <th class="py-2 px-4 text-left">Keterangan</th>
+                    <th class="py-2 px-4 text-right">Jumlah</th>
+                  </tr>
+                </thead>
+                <tbody id="transaksi-terakhir">
+                  <!-- Diisi oleh JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transaksi Section -->
+      <div id="transaksi-section" class="section-content hidden">
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Tambah Transaksi Baru</h2>
+          <form id="form-transaksi" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="jenis-transaksi" class="block text-sm font-medium text-gray-700 mb-1">Jenis Transaksi</label>
+              <select id="jenis-transaksi" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option value="pemasukan">Pemasukan</option>
+                <option value="pengeluaran">Pengeluaran</option>
+                <option value="aset">Aset</option>
+                <option value="piutang">Piutang (Memberi)</option>
+                <option value="penerimaan_piutang">Penerimaan Piutang</option>
+                <option value="hutang">Hutang (Mengambil)</option>
+                <option value="pembayaran_hutang">Pembayaran Hutang</option>
+              </select>
+            </div>
+            <div>
+              <label for="bank" class="block text-sm font-medium text-gray-700 mb-1">Bank</label>
+              <select id="bank" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option value="BCA">BCA</option>
+                <option value="BRI">BRI</option>
+                <option value="Mandiri">Mandiri</option>
+                <option value="BNI">BNI</option>
+                <option value="Dana">Dana</option>
+                <option value="OVO">OVO</option>
+                <option value="GoPay">GoPay</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+            </div>
+            <div>
+              <label for="jumlah" class="block text-sm font-medium text-gray-700 mb-1">Jumlah (Rp)</label>
+              <input type="number" id="jumlah" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required min="0">
+              <p id="error-jumlah" class="input-error-message hidden">Jumlah harus angka positif.</p>
+            </div>
+            <div>
+              <label for="tanggal" class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
+              <input type="date" id="tanggal" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+              <p id="error-tanggal" class="input-error-message hidden">Tanggal tidak boleh di masa depan.</p>
+            </div>
+            <div>
+              <label for="kategori-transaksi" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+              <select id="kategori-transaksi" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <!-- Opsi akan diisi oleh JavaScript -->
+              </select>
+              <p id="error-kategori-transaksi" class="input-error-message hidden">Kategori harus dipilih.</p>
+            </div>
+            <div class="md:col-span-2">
+              <label for="keterangan" class="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
+              <textarea id="keterangan" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+            </div>
+            <div class="md:col-span-2">
+              <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                Simpan Transaksi
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-800">Daftar Transaksi</h2>
+            <div class="mt-2 md:mt-0 flex flex-wrap gap-2">
+              <input type="text" id="search-transaksi" placeholder="Cari transaksi..." class="px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+              <input type="date" id="filter-tanggal-dari" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+              <input type="date" id="filter-tanggal-sampai" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+              <button onclick="filterTransaksi('semua', this)" class="filter-button px-3 py-2 bg-gray-200 text-gray-700 rounded-md">Semua</button>
+              <button onclick="filterTransaksi('pemasukan', this)" class="filter-button px-3 py-2 bg-green-100 text-green-700 rounded-md">Pemasukan</button>
+              <button onclick="filterTransaksi('pengeluaran', this)" class="filter-button px-3 py-2 bg-red-100 text-red-700 rounded-md">Pengeluaran</button>
+            </div>
+          </div>
+          
+          <div class="overflow-x-auto">
+            <table class="min-w-full responsive-table">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="py-2 px-4 text-left">Tanggal</th>
+                  <th class="py-2 px-4 text-left">Jenis</th>
+                  <th class="py-2 px-4 text-left">Bank</th>
+                  <th class="py-2 px-4 text-left">Kategori</th>
+                  <th class="py-2 px-4 text-left">Keterangan</th>
+                  <th class="py-2 px-4 text-right">Jumlah</th>
+                  <th class="py-2 px-4 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="daftar-transaksi">
+                <!-- Diisi oleh JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Laporan Section -->
+      <div id="laporan-section" class="section-content hidden">
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Buat Laporan</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label for="laporan-dari" class="block text-sm font-medium text-gray-700 mb-1">Dari Tanggal</label>
+              <input type="date" id="laporan-dari" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+              <label for="laporan-sampai" class="block text-sm font-medium text-gray-700 mb-1">Sampai Tanggal</label>
+              <input type="date" id="laporan-sampai" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+              <label for="laporan-jenis" class="block text-sm font-medium text-gray-700 mb-1">Jenis Laporan</label>
+              <select id="laporan-jenis" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option value="semua">Semua Transaksi</option>
+                <option value="pemasukan">Hanya Pemasukan</option>
+                <option value="pengeluaran">Hanya Pengeluaran</option>
+                <option value="aset">Hanya Aset</option>
+                <option value="piutang">Hanya Piutang (Memberi)</option>
+                <option value="penerimaan_piutang">Hanya Penerimaan Piutang</option>
+                <option value="hutang">Hanya Hutang (Mengambil)</option>
+                <option value="pembayaran_hutang">Hanya Pembayaran Hutang</option>
+              </select>
+            </div>
+            <div>
+              <label for="laporan-bank" class="block text-sm font-medium text-gray-700 mb-1">Bank/Rekening</label>
+              <select id="laporan-bank" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option value="semua">Semua Bank</option>
+                <option value="BCA">BCA</option>
+                <option value="BRI">BRI</option>
+                <option value="Mandiri">Mandiri</option>
+                <option value="BNI">BNI</option>
+                <option value="Dana">Dana</option>
+                <option value="OVO">OVO</option>
+                <option value="GoPay">GoPay</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+            </div>
+            <div>
+              <label for="laporan-kategori" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+              <select id="laporan-kategori" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <option value="semua">Semua Kategori</option>
+                <!-- Opsi akan diisi oleh JavaScript -->
+              </select>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button onclick="generateLaporan()" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+              Tampilkan Laporan
+            </button>
+            <button onclick="exportExcel()" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">
+              Export Excel
+            </button>
+            <button onclick="kirimWhatsApp()" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+              Kirim ke WhatsApp
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Hasil Laporan</h2>
+          <div class="overflow-x-auto">
+            <table class="min-w-full responsive-table">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="py-2 px-4 text-left">Tanggal</th>
+                  <th class="py-2 px-4 text-left">Jenis</th>
+                  <th class="py-2 px-4 text-left">Bank</th>
+                  <th class="py-2 px-4 text-left">Kategori</th>
+                  <th class="py-2 px-4 text-left">Keterangan</th>
+                  <th class="py-2 px-4 text-right">Jumlah</th>
+                </tr>
+              </thead>
+              <tbody id="hasil-laporan">
+                <!-- Diisi oleh JavaScript -->
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-4 p-4 border-t">
+            <div class="flex justify-between">
+              <span class="font-semibold">Total Pemasukan:</span>
+              <span class="font-bold text-green-600" id="laporan-total-pemasukan">Rp0</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-semibold">Total Pengeluaran:</span>
+              <span class="font-bold text-red-600" id="laporan-total-pengeluaran">Rp0</span>
+            </div>
+            <div class="flex justify-between mt-2 pt-2 border-t">
+              <span class="font-bold">Saldo Bersih:</span>
+              <span class="font-bold text-blue-600" id="laporan-saldo-bersih">Rp0</span>
+            </div>
+            <!-- BAGIAN BARU UNTUK SALDO AWAL DAN AKHIR PER BANK -->
+            <div class="mt-4 pt-4 border-t">
+              <h3 class="font-bold text-gray-800 mb-2">Rincian Saldo per Bank</h3>
+              <div id="laporan-saldo-per-bank" class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <!-- Rincian saldo per bank akan diisi oleh JavaScript -->
+              </div>
+            </div>
+            <!-- AKHIR BAGIAN BARU -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Database Section -->
+      <div id="database-section" class="section-content hidden">
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Backup & Restore Database</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h3 class="font-semibold text-gray-700 mb-2">Backup Database</h3>
+              <p class="text-sm text-gray-600 mb-3">Simpan semua data transaksi Anda dalam file JSON</p>
+              <button onclick="backupDatabase()" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                Download Backup
+              </button>
+            </div>
+            <div>
+              <h3 class="font-semibold text-gray-700 mb-2">Restore Database</h3>
+              <p class="text-sm text-gray-600 mb-3">Impor data dari file backup sebelumnya</p>
+              <input type="file" id="file-restore" class="w-full mb-2" accept=".json">
+              <button onclick="restoreDatabase()" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">
+                Upload & Restore
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Statistik Database</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-gray-50 p-4 rounded-md">
+              <h3 class="font-medium text-gray-700 mb-1">Total Transaksi</h3>
+              <p class="text-xl font-bold" id="total-transaksi">0</p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-md">
+              <h3 class="font-medium text-gray-700 mb-1">Ukuran Database</h3>
+              <p class="text-xl font-bold" id="ukuran-database">0 KB</p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-md">
+              <h3 class="font-medium text-gray-700 mb-1">Backup Terakhir</h3>
+              <p class="text-xl font-bold" id="backup-terakhir">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BAGIAN BARU: Budgeting Section (Menggantikan Saldo Awal) -->
+      <div id="budgeting-section" class="section-content hidden">
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Atur Saldo Awal per Rekening</h2>
+          <div id="initial-balances-inputs" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Input saldo awal akan di-generate di sini oleh JavaScript -->
+          </div>
+          <div class="mt-4">
+            <button onclick="saveInitialBalances()" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+              Simpan Saldo Awal
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow mb-6 mt-6">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">🗓️ Saldo Awal Historis per Bulan</h2>
+          <div class="overflow-x-auto">
+            <table class="min-w-full responsive-table" id="historical-balances-table">
+              <thead class="bg-gray-100">
+                <tr id="historical-balances-table-header">
+                  <!-- Header akan di-generate oleh JavaScript -->
+                </tr>
+              </thead>
+              <tbody id="historical-initial-balances-list">
+                <!-- Diisi oleh JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Atur Anggaran Bulanan</h2>
+          <div class="flex space-x-2 mb-4">
+            <input type="month" id="budget-month-selector" class="px-3 py-2 border rounded-md">
+            <button onclick="loadBudgetForMonth()" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Pilih Bulan</button>
+          </div>
+          <div id="budget-inputs" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Input anggaran per kategori akan di-generate di sini -->
+          </div>
+          <div class="mt-4">
+            <button onclick="saveBudget()" class="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600">Simpan Anggaran</button>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Daftar Kategori</h2>
+          <div id="category-list" class="mb-4">
+            <!-- Daftar kategori akan ditampilkan di sini -->
+          </div>
+          <div class="flex space-x-2">
+            <input type="text" id="new-category-name" placeholder="Nama Kategori Baru" class="px-3 py-2 border rounded-md">
+            <button onclick="addCategory()" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Tambah Kategori</button>
+          </div>
+        </div>
+      </div>
+      <!-- AKHIR BAGIAN BARU -->
+
+      <!-- Loans Section -->
+      <div id="loans-section" class="section-content hidden">
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Tambah Pinjaman Baru</h2>
+          <form id="form-add-loan" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="loan-name" class="block text-sm font-medium text-gray-700 mb-1">Nama Pinjaman</label>
+              <input type="text" id="loan-name" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+              <p id="error-loan-name" class="input-error-message hidden">Nama pinjaman tidak boleh kosong.</p>
+            </div>
+            <div>
+              <label for="loan-principal" class="block text-sm font-medium text-gray-700 mb-1">Pokok Pinjaman (Rp)</label>
+              <input type="number" id="loan-principal" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required min="1">
+              <p id="error-loan-principal" class="input-error-message hidden">Pokok pinjaman harus lebih dari 0.</p>
+            </div>
+            <div>
+              <label for="loan-interest-rate" class="block text-sm font-medium text-gray-700 mb-1">Suku Bunga Tahunan (%)</label>
+              <input type="number" id="loan-interest-rate" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" step="0.01" required min="0">
+              <p id="error-loan-interest-rate" class="input-error-message hidden">Suku bunga tidak boleh negatif.</p>
+            </div>
+            <div>
+              <label for="loan-term" class="block text-sm font-medium text-gray-700 mb-1">Jangka Waktu (bulan)</label>
+              <input type="number" id="loan-term" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required min="1">
+              <p id="error-loan-term" class="input-error-message hidden">Jangka waktu harus lebih dari 0.</p>
+            </div>
+            <div>
+              <label for="loan-start-date" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Mulai</label>
+              <input type="date" id="loan-start-date" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+              <p id="error-loan-start-date" class="input-error-message hidden">Tanggal mulai tidak boleh di masa depan.</p>
+            </div>
+            <div>
+              <label for="loan-method" class="block text-sm font-medium text-gray-700 mb-1">Metode Bunga</label>
+              <select id="loan-method" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                <option value="Flat">Flat</option>
+                <option value="Anuitas">Anuitas</option>
+              </select>
+            </div>
+            <div>
+              <label for="loan-bank" class="block text-sm font-medium text-gray-700 mb-1">Bank Terkait</label>
+              <select id="loan-bank" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                <option value="BCA">BCA</option>
+                <option value="BRI">BRI</option>
+                <option value="Mandiri">Mandiri</option>
+                <option value="BNI">BNI</option>
+                <option value="Dana">Dana</option>
+                <option value="OVO">OVO</option>
+                <option value="GoPay">GoPay</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                Simpan Pinjaman
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Daftar Pinjaman Aktif</h2>
+          <div class="overflow-x-auto">
+            <table class="min-w-full responsive-table">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="py-2 px-4 text-left">Nama</th>
+                  <th class="py-2 px-4 text-right">Pokok Awal</th>
+                  <th class="py-2 px-4 text-right">Sisa Pokok</th>
+                  <th class="py-2 px-4 text-right">Bunga (%)</th>
+                  <th class="py-2 px-4 text-right">Jangka Waktu</th>
+                  <th class="py-2 px-4 text-left">Status</th>
+                  <th class="py-2 px-4 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="loans-list">
+                <!-- Daftar pinjaman akan diisi oleh JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Modal Detail Pinjaman -->
+        <div id="modal-loan-detail" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center p-4">
+          <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-bold" id="loan-detail-title">Detail Pinjaman</h3>
+              <button onclick="closeLoanDetailModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+            </div>
+            <div id="loan-detail-content">
+              <p><strong>Nama:</strong> <span id="detail-loan-name"></span></p>
+              <p><strong>Pokok Awal:</strong> <span id="detail-loan-principal"></span></p>
+              <p><strong>Sisa Pokok:</strong> <span id="detail-loan-current-principal"></span></p>
+              <p><strong>Suku Bunga:</strong> <span id="detail-loan-interest-rate"></span>%</p>
+              <p><strong>Jangka Waktu:</strong> <span id="detail-loan-term"></span> bulan</p>
+              <p><strong>Metode:</strong> <span id="detail-loan-method"></span></p>
+              <p><strong>Bank:</strong> <span id="detail-loan-bank"></span></p>
+              <p><strong>Total Bunga Dibayar:</strong> <span id="detail-loan-total-interest-paid"></span></p>
+              <p><strong>Total Pokok Dibayar:</strong> <span id="detail-loan-total-principal-paid"></span></p>
+              <p><strong>Status:</strong> <span id="detail-loan-status"></span></p>
+
+              <h4 class="font-semibold text-gray-700 mt-4 mb-2">Jadwal Pembayaran</h4>
+              <div class="overflow-x-auto max-h-60">
+                <table class="min-w-full responsive-table">
+                  <thead class="bg-gray-100">
+                    <tr>
+                      <th class="py-2 px-4 text-left">Bulan</th>
+                      <th class="py-2 px-4 text-right">Cicilan</th>
+                      <th class="py-2 px-4 text-right">Porsi Pokok</th>
+                      <th class="py-2 px-4 text-right">Porsi Bunga</th>
+                      <th class="py-2 px-4 text-right">Sisa Pokok</th>
+                      <th class="py-2 px-4 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="loan-amortization-schedule">
+                    <!-- Jadwal amortisasi akan diisi oleh JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+
+              <h4 class="font-semibold text-gray-700 mt-4 mb-2">Riwayat Pembayaran</h4>
+              <div class="overflow-x-auto max-h-40">
+                <table class="min-w-full responsive-table">
+                  <thead class="bg-gray-100">
+                    <tr>
+                      <th class="py-2 px-4 text-left">Tanggal</th>
+                      <th class="py-2 px-4 text-right">Jumlah</th>
+                      <th class="py-2 px-4 text-right">Porsi Pokok</th>
+                      <th class="py-2 px-4 text-right">Porsi Bunga</th>
+                    </tr>
+                  </thead>
+                  <tbody id="loan-payment-history">
+                    <!-- Riwayat pembayaran akan diisi oleh JavaScript -->
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="mt-6 flex justify-end space-x-3">
+                <button id="pay-loan-button" onclick="openPayLoanModal()" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">
+                  Bayar Cicilan Sekarang
+                </button>
+                <button type="button" onclick="closeLoanDetailModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Bayar Cicilan -->
+        <div id="modal-pay-loan" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center p-4">
+          <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-bold">Bayar Cicilan <span id="pay-loan-name"></span></h3>
+              <button onclick="closePayLoanModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+            </div>
+            <form id="form-pay-loan">
+              <input type="hidden" id="pay-loan-id">
+              <div class="mb-4">
+                <label for="pay-loan-amount" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Pembayaran (Rp)</label>
+                <input type="number" id="pay-loan-amount" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required min="1">
+                <p id="error-pay-loan-amount" class="input-error-message hidden">Jumlah pembayaran harus lebih dari 0.</p>
+              </div>
+              <div class="mb-4">
+                <label for="pay-loan-date" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Pembayaran</label>
+                <input type="date" id="pay-loan-date" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                <p id="error-pay-loan-date" class="input-error-message hidden">Tanggal pembayaran tidak boleh di masa depan.</p>
+              </div>
+              <div class="mt-6 flex justify-end space-x-3">
+                <button type="button" onclick="closePayLoanModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                  Batal
+                </button>
+                <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">
+                  Konfirmasi Pembayaran
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal untuk edit transaksi -->
+  <div id="modal-edit" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold">Edit Transaksi</h3>
+        <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+      </div>
+      <form id="form-edit-transaksi">
+        <input type="hidden" id="edit-id">
+        <div class="space-y-4">
+          <div>
+            <label for="edit-jenis" class="block text-sm font-medium text-gray-700 mb-1">Jenis Transaksi</label>
+            <select id="edit-jenis" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              <option value="pemasukan">Pemasukan</option>
+              <option value="pengeluaran">Pengeluaran</option>
+              <option value="aset">Aset</option>
+              <option value="piutang">Piutang (Memberi)</option>
+              <option value="penerimaan_piutang">Penerimaan Piutang</option>
+              <option value="hutang">Hutang (Mengambil)</option>
+              <option value="pembayaran_hutang">Pembayaran Hutang</option>
+            </select>
+          </div>
+          <div>
+            <label for="edit-bank" class="block text-sm font-medium text-gray-700 mb-1">Bank</label>
+            <select id="edit-bank" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              <option value="BCA">BCA</option>
+              <option value="BRI">BRI</option>
+              <option value="Mandiri">Mandiri</option>
+              <option value="BNI">BNI</option>
+              <option value="Dana">Dana</option>
+              <option value="OVO">OVO</option>
+              <option value="GoPay">GoPay</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+          </div>
+          <div>
+            <label for="edit-jumlah" class="block text-sm font-medium text-gray-700 mb-1">Jumlah (Rp)</label>
+            <input type="number" id="edit-jumlah" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required min="0">
+            <p id="error-edit-jumlah" class="input-error-message hidden">Jumlah harus angka positif.</p>
+          </div>
+          <div>
+            <label for="edit-tanggal" class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
+            <input type="date" id="edit-tanggal" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+            <p id="error-edit-tanggal" class="input-error-message hidden">Tanggal tidak boleh di masa depan.</p>
+          </div>
+          <div>
+            <label for="edit-kategori" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+            <select id="edit-kategori" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+              <!-- Opsi akan diisi oleh JavaScript -->
+            </select>
+            <p id="error-edit-kategori" class="input-error-message hidden">Kategori harus dipilih.</p>
+          </div>
+          <div>
+            <label for="edit-keterangan" class="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
+            <textarea id="edit-keterangan" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+          </div>
+        </div>
+        <div class="mt-6 flex justify-end space-x-3">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+            Batal
+          </button>
+          <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+            Simpan Perubahan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Custom Notification Container -->
+  <div id="notification-container" class="notification"></div>
+
+  <!-- Custom Confirmation Modal -->
+  <div id="confirmation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
+      <h3 class="text-lg font-bold mb-4" id="confirmation-title">Konfirmasi</h3>
+      <p class="mb-6" id="confirmation-message">Apakah Anda yakin?</p>
+      <div class="flex justify-end space-x-3">
+        <button id="confirm-cancel-btn" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Batal</button>
+        <button id="confirm-ok-btn" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Ya, Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal untuk edit Saldo Awal Historis -->
+  <div id="modal-edit-historical-balance" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold">Edit Saldo Awal Historis Bulan <span id="edit-historical-month-name"></span></h3>
+        <button onclick="closeEditHistoricalBalanceModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+      </div>
+      <form id="form-edit-historical-balance">
+        <input type="hidden" id="edit-historical-month-key">
+        <div id="edit-historical-balance-inputs" class="space-y-4">
+          <!-- Input saldo per bank akan di-generate di sini -->
+        </div>
+        <div class="mt-6 flex justify-end space-x-3">
+          <button type="button" onclick="closeEditHistoricalBalanceModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+            Batal
+          </button>
+          <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+            Simpan Perubahan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Load additional JS libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <script>
+    // Definisikan daftar bank/rekening yang tersedia
+    const availableBanks = [
+      'BCA', 'BRI', 'Mandiri', 'BNI', 'Dana', 'OVO', 'GoPay', 'Lainnya'
+    ];
+
+    // Inisialisasi database
+    let database = {
+      transaksi: [],
+      loans: [],
+      lastBackup: null,
+      initialBalances: {},
+      historicalInitialBalances: {},
+      budgets: {},
+      categories: ["makanan", "transportasi", "hiburan", "belanja", "tagihan", "pendidikan", "lain-lain"]
+    };
+
+    // --- Custom Notification System ---
+    let notificationTimeout;
+    function showNotification(message, type = 'info', duration = 3000) {
+      const notificationContainer = document.getElementById('notification-container');
+      notificationContainer.textContent = message;
+      notificationContainer.className = `notification ${type}`; // Reset classes and add new ones
+      notificationContainer.classList.add('show');
+
+      clearTimeout(notificationTimeout);
+      notificationTimeout = setTimeout(() => {
+        notificationContainer.classList.remove('show');
+        // Optional: Hide display after transition for accessibility/layout
+        setTimeout(() => { notificationContainer.style.display = 'none'; }, 300);
+      }, duration);
+    }
+
+    // --- Custom Confirmation Modal System ---
+    let resolveConfirmation;
+    function showConfirmation(title, message, confirmText = 'Ya', cancelText = 'Batal', confirmClass = 'bg-red-500 hover:bg-red-600') {
+      const modal = document.getElementById('confirmation-modal');
+      document.getElementById('confirmation-title').textContent = title;
+      document.getElementById('confirmation-message').textContent = message;
+      const confirmBtn = document.getElementById('confirm-ok-btn');
+      const cancelBtn = document.getElementById('confirm-cancel-btn');
+
+      confirmBtn.textContent = confirmText;
+      confirmBtn.className = `px-4 py-2 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${confirmClass}`;
+      cancelBtn.textContent = cancelText;
+
+      modal.classList.remove('hidden');
+
+      return new Promise((resolve) => {
+        resolveConfirmation = resolve;
+
+        confirmBtn.onclick = () => {
+          modal.classList.add('hidden');
+          resolve(true);
+        };
+        cancelBtn.onclick = () => {
+          modal.classList.add('hidden');
+          resolve(false);
+        };
+      });
+    }
+
+    // --- Input Validation Helper ---
+    function validateInput(inputElement, errorMessageElement, validationFn, errorMessage) {
+      const isValid = validationFn(inputElement.value);
+      if (!isValid) {
+        errorMessageElement.textContent = errorMessage;
+        errorMessageElement.classList.remove('hidden');
+        inputElement.classList.add('border-red-500');
+      } else {
+        errorMessageElement.classList.add('hidden');
+        inputElement.classList.remove('border-red-500');
+      }
+      return isValid;
+    }
+
+    function hideAllErrorMessages(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+        form.querySelectorAll('.input-error-message').forEach(el => el.classList.add('hidden'));
+        form.querySelectorAll('input, select, textarea').forEach(el => el.classList.remove('border-red-500'));
+    }
+
+    // Load data dari localStorage saat pertama kali dijalankan
+    function loadDatabase() {
+      const savedData = localStorage.getItem('aplikasiKeuangan');
+      if (savedData) {
+        database = JSON.parse(savedData);
+        // Ensure all necessary properties exist after loading
+        if (!database.initialBalances) {
+          database.initialBalances = {};
+        }
+        if (!database.historicalInitialBalances) {
+          database.historicalInitialBalances = {};
+        }
+        if (!database.budgets) {
+          database.budgets = {};
+        }
+        if (!database.categories || !Array.isArray(database.categories) || database.categories.length === 0) {
+          database.categories = ["makanan", "transportasi", "hiburan", "belanja", "tagihan", "pendidikan", "lain-lain"];
+        }
+        if (!database.loans) {
+          database.loans = [];
+        }
+      }
+      calculateAndStoreMonthlyInitialBalance();
+      updateUI();
+      updateDatabaseStats();
+      renderInitialBalanceInputs(); // Pastikan ini dipanggil setelah loadDatabase
+      populateCategoryDropdowns();
+      renderCategoryList();
+      renderLoansList();
+    }
+
+    // Simpan data ke localStorage
+    function saveDatabase() {
+      localStorage.setItem('aplikasiKeuangan', JSON.stringify(database));
+      updateDatabaseStats();
+    }
+
+    // Update UI berdasarkan data
+    function updateUI() {
+      updateFinancialSummary();
+      // updateDaftarTransaksi(); // This will be called by filterTransaksi with default 'semua'
+      updateTransaksiTerakhir();
+      renderCharts();
+      renderHistoricalInitialBalances();
+      renderLoansList();
+      renderInitialBalanceInputs(); // Pastikan ini juga dipanggil di updateUI
+    }
+
+    // Fungsi untuk menghasilkan warna acak yang cerah
+    function getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    }
+
+    // Objek untuk menyimpan instance chart agar bisa dihancurkan
+    const chartInstances = {};
+
+    // Fungsi untuk membuat grafik lingkaran
+    function createPieChart(canvasId, title, dataLabels, dataValues, chartType) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+
+      if (chartInstances[canvasId]) {
+        chartInstances[canvasId].destroy();
+      }
+
+      // Filter out labels with 0 values to avoid empty slices
+      const filteredLabels = [];
+      const filteredValues = [];
+      for (let i = 0; i < dataValues.length; i++) {
+          if (dataValues[i] > 0) {
+              filteredLabels.push(dataLabels[i]);
+              filteredValues.push(dataValues[i]);
+          }
+      }
+
+      if (filteredValues.length === 0) {
+          // Display a message or clear the canvas if no data
+          ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+          ctx.font = '14px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('Tidak ada data untuk grafik ini.', ctx.canvas.width / 2, ctx.canvas.height / 2);
+          return;
+      }
+
+      const backgroundColors = filteredLabels.map(() => getRandomColor());
+
+      chartInstances[canvasId] = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: filteredLabels,
+          datasets: [{
+            label: chartType === 'pengeluaran' ? 'Jumlah Pengeluaran' : 'Jumlah Pemasukan',
+            data: filteredValues,
+            backgroundColor: backgroundColors,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: title
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let label = context.label || '';
+                  if (label) {
+                    label += ': ';
+                  }
+                  if (context.parsed !== null) {
+                    label += formatRupiah(context.parsed);
+                  }
+                  return label;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Fungsi utama untuk merender semua grafik
+    function renderCharts() {
+      const today = new Date();
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+
+      const prevMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const previousMonth = prevMonthDate.getMonth();
+      const previousYear = prevMonthDate.getFullYear();
+
+      document.getElementById('current-month-name').textContent = new Date(currentYear, currentMonth, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+      document.getElementById('previous-month-name').textContent = new Date(previousYear, previousMonth, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+      const { pengeluaranBulanIni, pemasukanBulanIni } = processTransactionsForCharts(currentMonth, currentYear);
+      createPieChart('chartPengeluaranBulanIni', 'Komposisi Pengeluaran Bulan Ini', Object.keys(pengeluaranBulanIni), Object.values(pengeluaranBulanIni), 'pengeluaran');
+      createPieChart('chartPemasukanBulanIni', 'Komposisi Pemasukan Bulan Ini', Object.keys(pemasukanBulanIni), Object.values(pemasukanBulanIni), 'pemasukan');
+
+      const { pengeluaranBulanIni: pengeluaranBulanLalu, pemasukanBulanIni: pemasukanBulanLalu } = processTransactionsForCharts(previousMonth, previousYear);
+      createPieChart('chartPengeluaranBulanLalu', 'Komposisi Pengeluaran Bulan Lalu', Object.keys(pengeluaranBulanLalu), Object.values(pengeluaranBulanLalu), 'pengeluaran');
+      createPieChart('chartPemasukanBulanLalu', 'Komposisi Pemasukan Bulan Lalu', Object.keys(pemasukanBulanLalu), Object.values(pemasukanBulanLalu), 'pemasukan');
+
+      const { pengeluaranTahunan, pemasukanTahunan } = processTransactionsForCharts(null, null, true);
+      createPieChart('chartPengeluaranTahunan', 'Komposisi Pengeluaran 1 Tahun', Object.keys(pengeluaranTahunan), Object.values(pengeluaranTahunan), 'pengeluaran');
+      createPieChart('chartPemasukanTahunan', 'Komposisi Pemasukan 1 Tahun', Object.keys(pemasukanTahunan), Object.values(pemasukanTahunan), 'pemasukan');
+    }
+
+    // Fungsi pembantu untuk memproses transaksi untuk grafik
+    function processTransactionsForCharts(month, year, isAnnual = false) {
+      const pengeluaranMap = {};
+      const pemasukanMap = {};
+
+      // Initialize maps with all categories to ensure they appear even if 0
+      database.categories.forEach(cat => {
+        const capitalizedCat = cat.charAt(0).toUpperCase() + cat.slice(1);
+        pengeluaranMap[capitalizedCat] = 0;
+        pemasukanMap[capitalizedCat] = 0; // Pemasukan juga bisa punya kategori
+      });
+
+      // Add other specific types that act as 'expenses' or 'income' for charting purposes
+      pengeluaranMap['Pembelian Aset'] = 0;
+      pengeluaranMap['Pemberian Piutang'] = 0;
+      pengeluaranMap['Pembayaran Hutang'] = 0;
+
+      pemasukanMap['Penerimaan Piutang'] = 0;
+      pemasukanMap['Penerimaan Hutang'] = 0;
+
+      const today = new Date();
+      // Calculate start date for annual report (1 year ago from the first day of current month)
+      const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), 1);
+
+      database.transaksi.forEach(t => {
+        const tDate = new Date(t.tanggal);
+        let shouldInclude = false;
+
+        if (isAnnual) {
+          // Include transactions from one year ago (start of month) up to today
+          shouldInclude = tDate >= oneYearAgo && tDate <= today;
+        } else {
+          // Include transactions for the specific month and year
+          shouldInclude = tDate.getMonth() === month && tDate.getFullYear() === year;
+        }
+
+        if (shouldInclude) {
+          const categoryName = t.kategori ? (t.kategori.charAt(0).toUpperCase() + t.kategori.slice(1)) : 'Lain-lain';
+
+          switch (t.jenis) {
+            case 'pengeluaran':
+              pengeluaranMap[categoryName] = (pengeluaranMap[categoryName] || 0) + t.jumlah;
+              break;
+            case 'piutang':
+              pengeluaranMap['Pemberian Piutang'] = (pengeluaranMap['Pemberian Piutang'] || 0) + t.jumlah;
+              break;
+            case 'pembayaran_hutang':
+              pengeluaranMap['Pembayaran Hutang'] = (pengeluaranMap['Pembayaran Hutang'] || 0) + t.jumlah;
+              break;
+            case 'aset':
+              pengeluaranMap['Pembelian Aset'] = (pengeluaranMap['Pembelian Aset'] || 0) + t.jumlah;
+              break;
+            case 'pemasukan':
+              pemasukanMap[categoryName] = (pemasukanMap[categoryName] || 0) + t.jumlah; // Pemasukan juga bisa punya kategori
+              break;
+            case 'penerimaan_piutang':
+              pemasukanMap['Penerimaan Piutang'] = (pemasukanMap['Penerimaan Piutang'] || 0) + t.jumlah;
+              break;
+            case 'hutang':
+              pemasukanMap['Penerimaan Hutang'] = (pemasukanMap['Penerimaan Hutang'] || 0) + t.jumlah;
+              break;
+          }
+        }
+      });
+
+      // Remove categories with 0 values for cleaner charts
+      for (const key in pengeluaranMap) {
+        if (pengeluaranMap[key] === 0) {
+          delete pengeluaranMap[key];
+        }
+      }
+      for (const key in pemasukanMap) {
+        if (pemasukanMap[key] === 0) {
+          delete pemasukanMap[key];
+        }
+      }
+
+      return { pengeluaranBulanIni: pengeluaranMap, pemasukanBulanIni: pemasukanMap, pengeluaranTahunan: pengeluaranMap, pemasukanTahunan: pemasukanMap };
+    }
+
+    // FUNGSI BARU: Menghitung dan menyimpan saldo awal bulanan secara historis
+    function calculateAndStoreMonthlyInitialBalance() {
+      const sekarang = new Date();
+      const bulanIni = sekarang.getMonth();
+      const tahunIni = sekarang.getFullYear();
+      const bulanTahunSekarang = `${tahunIni}-${(bulanIni + 1).toString().padStart(2, '0')}`;
+
+      // Only calculate if it's a new month or if the current month's balance hasn't been recorded yet
+      if (database.historicalInitialBalances[bulanTahunSekarang]) {
+        return;
+      }
+
+      // Calculate the balance at the end of the previous month
+      const saldoAkhirBulanSebelumnya = {};
+      availableBanks.forEach(bankName => {
+        saldoAkhirBulanSebelumnya[bankName] = database.initialBalances[bankName] || 0;
+      });
+
+      // Sort transactions by date to ensure correct balance calculation
+      const sortedTransactions = [...database.transaksi].sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+
+      sortedTransactions.forEach(transaksi => {
+        const tanggalTransaksi = new Date(transaksi.tanggal);
+        const bulanTransaksi = tanggalTransaksi.getMonth();
+        const tahunTransaksi = tanggalTransaksi.getFullYear();
+
+        // If the transaction occurred before the current month, apply it to the previous month's balance
+        if (tahunTransaksi < tahunIni || (tahunTransaksi === tahunIni && bulanTransaksi < bulanIni)) {
+          if (saldoAkhirBulanSebelumnya.hasOwnProperty(transaksi.bank)) {
+            if (transaksi.jenis === 'pemasukan' || transaksi.jenis === 'hutang' || transaksi.jenis === 'penerimaan_piutang') {
+              saldoAkhirBulanSebelumnya[transaksi.bank] += transaksi.jumlah;
+            } else if (transaksi.jenis === 'pengeluaran' || transaksi.jenis === 'piutang' || transaksi.jenis === 'pembayaran_hutang' || transaksi.jenis === 'aset') {
+              saldoAkhirBulanSebelumnya[transaksi.bank] -= transaksi.jumlah;
+            }
+          }
+        }
+      });
+
+      database.historicalInitialBalances[bulanTahunSekarang] = {};
+      availableBanks.forEach(bankName => {
+        database.historicalInitialBalances[bulanTahunSekarang][bankName] = saldoAkhirBulanSebelumnya[bankName];
+      });
+      saveDatabase();
+    }
+
+    // FUNGSI BARU: Update Ringkasan Keuangan di Dashboard
+    function updateFinancialSummary() {
+      const summaryGrid = document.getElementById('financial-summary-grid');
+      summaryGrid.innerHTML = '';
+
+      const sekarang = new Date();
+      const bulanIni = sekarang.getMonth();
+      const tahunIni = sekarang.getFullYear();
+      const bulanTahunSekarang = `${tahunIni}-${(bulanIni + 1).toString().padStart(2, '0')}`;
+
+      const saldoAwalBulanIniPerBank = database.historicalInitialBalances[bulanTahunSekarang] || {};
+      const currentBalancesBulanIni = {};
+      let totalSaldoSaatIni = 0;
+      let totalSaldoAwalBulanIni = 0;
+      let totalPemasukanBulanIni = 0;
+      let totalPengeluaranBulanIni = 0;
+
+      availableBanks.forEach(bankName => {
+        currentBalancesBulanIni[bankName] = saldoAwalBulanIniPerBank[bankName] || 0;
+        totalSaldoAwalBulanIni += currentBalancesBulanIni[bankName];
+      });
+
+      database.transaksi.forEach(transaksi => {
+        const tanggalTransaksi = new Date(transaksi.tanggal);
+        const bulanTransaksi = tanggalTransaksi.getMonth();
+        const tahunTransaksi = tanggalTransaksi.getFullYear();
+
+        if (bulanTransaksi === bulanIni && tahunTransaksi === tahunIni) {
+          if (currentBalancesBulanIni.hasOwnProperty(transaksi.bank)) {
+            if (transaksi.jenis === 'pemasukan' || transaksi.jenis === 'hutang' || transaksi.jenis === 'penerimaan_piutang') {
+              currentBalancesBulanIni[transaksi.bank] += transaksi.jumlah;
+              totalPemasukanBulanIni += transaksi.jumlah;
+            } else if (transaksi.jenis === 'pengeluaran' || transaksi.jenis === 'piutang' || transaksi.jenis === 'pembayaran_hutang' || transaksi.jenis === 'aset') {
+              currentBalancesBulanIni[transaksi.bank] -= transaksi.jumlah;
+              totalPengeluaranBulanIni += transaksi.jumlah;
+            }
+          }
+        }
+      });
+
+      availableBanks.forEach(bankName => {
+        totalSaldoSaatIni += currentBalancesBulanIni[bankName];
+      });
+
+      let totalAset = 0;
+      let totalPiutang = 0;
+      let totalHutang = 0;
+
+      // Calculate total assets, receivables, and payables from all transactions
+      database.transaksi.forEach(transaksi => {
+        if (transaksi.jenis === 'aset') {
+          totalAset += transaksi.jumlah;
+        } else if (transaksi.jenis === 'piutang') {
+          totalPiutang += transaksi.jumlah;
+        } else if (transaksi.jenis === 'penerimaan_piutang') {
+          totalPiutang -= transaksi.jumlah;
+        } else if (transaksi.jenis === 'hutang' && !transaksi.isLoanRelated) { // Exclude loan-related 'hutang'
+          totalHutang += transaksi.jumlah;
+        } else if (transaksi.jenis === 'pembayaran_hutang' && !transaksi.isLoanRelated) { // Exclude loan-related 'pembayaran_hutang'
+          totalHutang -= transaksi.jumlah;
+        }
+      });
+
+      // Add active loans to total debt
+      database.loans.forEach(loan => {
+        if (loan.status === 'Aktif') {
+          totalHutang += loan.currentPrincipal;
+        }
+      });
+
+      const currentMonthBudget = database.budgets[bulanTahunSekarang] || {};
+      const actualExpensesThisMonth = {};
+      database.categories.forEach(category => {
+        actualExpensesThisMonth[category] = 0;
+      });
+      database.transaksi.forEach(transaksi => {
+        const tanggalTransaksi = new Date(transaksi.tanggal);
+        const bulanTransaksi = tanggalTransaksi.getMonth();
+        const tahunTransaksi = tanggalTransaksi.getFullYear();
+        if (bulanTransaksi === bulanIni && tahunTransaksi === tahunIni && transaksi.jenis === 'pengeluaran' && transaksi.kategori) {
+          actualExpensesThisMonth[transaksi.kategori] = (actualExpensesThisMonth[transaksi.kategori] || 0) + transaksi.jumlah;
+        }
+      });
+
+      let totalBudgetedExpense = 0;
+      let totalActualExpenseForBudget = 0;
+      database.categories.forEach(category => {
+        totalBudgetedExpense += (currentMonthBudget[category] || 0);
+        totalActualExpenseForBudget += (actualExpensesThisMonth[category] || 0);
+      });
+      const remainingBudget = totalBudgetedExpense - totalActualExpenseForBudget;
+      const budgetPercentage = totalBudgetedExpense > 0 ? (totalActualExpenseForBudget / totalBudgetedExpense) * 100 : 0;
+      const budgetProgressBarColor = budgetPercentage > 100 ? 'bg-red-500' : (budgetPercentage > 80 ? 'bg-orange-400' : 'bg-blue-500');
+      const budgetTextColor = remainingBudget < 0 ? 'text-red-600' : 'text-green-600';
+
+      summaryGrid.innerHTML += `
+        <div class="bg-blue-50 p-4 rounded-lg shadow-sm border-l-4 border-blue-600">
+          <h3 class="font-semibold text-gray-700 text-sm">Total Saldo Saat Ini</h3>
+          <p class="text-xl font-bold mt-1">${formatRupiah(totalSaldoSaatIni)}</p>
+          <p class="text-xs text-gray-500">(${availableBanks.map(bank => `${bank}: ${formatRupiah(currentBalancesBulanIni[bank] || 0)}`).join(', ')})</p>
+        </div>
+      `;
+
+      summaryGrid.innerHTML += `
+        <div class="bg-purple-50 p-4 rounded-lg shadow-sm border-l-4 border-purple-500">
+          <h3 class="font-semibold text-gray-700 text-sm">Saldo Awal Bulan Ini</h3>
+          <p class="text-xl font-bold mt-1">${formatRupiah(totalSaldoAwalBulanIni)}</p>
+        </div>
+      `;
+
+      summaryGrid.innerHTML += `
+        <div class="bg-green-50 p-4 rounded-lg shadow-sm border-l-4 border-green-600">
+          <h3 class="font-semibold text-gray-700 text-sm">Pemasukan Bulan Ini</h3>
+          <p class="text-xl font-bold mt-1">${formatRupiah(totalPemasukanBulanIni)}</p>
+        </div>
+      `;
+
+      summaryGrid.innerHTML += `
+        <div class="bg-red-50 p-4 rounded-lg shadow-sm border-l-4 border-red-600">
+          <h3 class="font-semibold text-gray-700 text-sm">Pengeluaran Bulan Ini</h3>
+          <p class="text-xl font-bold mt-1">${formatRupiah(totalPengeluaranBulanIni)}</p>
+        </div>
+      `;
+
+      summaryGrid.innerHTML += `
+        <div class="bg-yellow-50 p-4 rounded-lg shadow-sm border-l-4 border-yellow-600">
+          <h3 class="font-semibold text-gray-700 text-sm">Net Bulan Ini</h3>
+          <p class="text-xl font-bold mt-1">${formatRupiah(totalPemasukanBulanIni - totalPengeluaranBulanIni)}</p>
+        </div>
+      `;
+
+      summaryGrid.innerHTML += `
+        <div class="bg-gray-50 p-4 rounded-lg shadow-sm border-l-4 border-gray-600">
+          <h3 class="font-semibold text-gray-700 text-sm">Total Aset</h3>
+          <p class="text-xl font-bold mt-1">${formatRupiah(totalAset)}</p>
+        </div>
+      `;
+
+      summaryGrid.innerHTML += `
+        <div class="bg-gray-50 p-4 rounded-lg shadow-sm border-l-4 border-gray-600">
+          <h3 class="font-semibold text-gray-700 text-sm">Total Piutang</h3>
+          <p class="text-xl font-bold mt-1">${formatRupiah(totalPiutang)}</p>
+        </div>
+      `;
+
+      summaryGrid.innerHTML += `
+        <div class="bg-gray-50 p-4 rounded-lg shadow-sm border-l-4 border-gray-600">
+          <h3 class="font-semibold text-gray-700 text-sm">Total Hutang</h3>
+          <p class="text-xl font-bold mt-1">${formatRupiah(totalHutang)}</p>
+        </div>
+      `;
+
+      summaryGrid.innerHTML += `
+        <div class="bg-orange-50 p-4 rounded-lg shadow-sm border-l-4 border-orange-600 md:col-span-full lg:col-span-1">
+          <h3 class="font-semibold text-gray-700 text-sm">Progres Anggaran Bulan Ini</h3>
+          <p class="text-xl font-bold mt-1">${formatRupiah(totalActualExpenseForBudget)} / ${formatRupiah(totalBudgetedExpense)}</p>
+          <div class="w-full bg-gray-200 rounded-full h-2.5 mt-1">
+            <div class="${budgetProgressBarColor} h-2.5 rounded-full" style="width: ${Math.min(100, budgetPercentage)}%"></div>
+          </div>
+          <p class="text-xs mt-1 ${budgetTextColor}">Sisa Anggaran: ${formatRupiah(remainingBudget)}</p>
+        </div>
+      `;
+    }
+
+    // Update daftar transaksi
+    function updateDaftarTransaksi() {
+      // Get the currently active filter button to re-apply the filter
+      const activeFilterButton = document.querySelector('#transaksi-section .filter-button.active');
+      let currentFilterType = 'semua';
+      if (activeFilterButton) {
+          if (activeFilterButton.textContent.includes('Pemasukan')) {
+              currentFilterType = 'pemasukan';
+          } else if (activeFilterButton.textContent.includes('Pengeluaran')) {
+              currentFilterType = 'pengeluaran';
+          }
+      }
+      filterTransaksi(currentFilterType, activeFilterButton);
+    }
+
+    // Update transaksi terakhir
+    function updateTransaksiTerakhir() {
+      const tbody = document.getElementById('transaksi-terakhir');
+      tbody.innerHTML = '';
+
+      const sortedTransaksi = [...database.transaksi].sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+      const transaksiTerakhir = sortedTransaksi.slice(0, 5);
+
+      transaksiTerakhir.forEach(transaksi => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b';
+
+        const isIncome = (transaksi.jenis === 'pemasukan' || transaksi.jenis === 'penerimaan_piutang' || transaksi.jenis === 'hutang');
+        const isExpense = (transaksi.jenis === 'pengeluaran' || transaksi.jenis === 'piutang' || transaksi.jenis === 'pembayaran_hutang' || transaksi.jenis === 'aset');
+
+        tr.innerHTML = `
+          <td class="py-2 px-4">${formatTanggal(transaksi.tanggal)}</td>
+          <td class="py-2 px-4">${transaksi.keterangan || '-'}</td>
+          <td class="py-2 px-4 text-right ${isIncome ? 'text-green-600' : (isExpense ? 'text-red-600' : '')}">
+            ${formatRupiah(transaksi.jumlah)}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Format tanggal untuk tampilan
+    function formatTanggal(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+
+    // Format rupiah
+    function formatRupiah(angka) {
+      // Ensure angka is a number and handle potential NaN
+      const num = Number(angka);
+      if (isNaN(num)) {
+          return 'Rp0';
+      }
+      return 'Rp' + Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    // Toggle section
+    function toggleSection(section) {
+      document.querySelectorAll('.section-content').forEach(div => {
+        div.classList.add('hidden');
+      });
+      document.getElementById(`${section}-section`).classList.remove('hidden');
+
+      // Specific actions for each section
+      if (section === 'budgeting') {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        document.getElementById('budget-month-selector').value = `${year}-${month}`;
+        loadBudgetForMonth();
+        renderCategoryList();
+        renderInitialBalanceInputs(); // Pastikan input saldo awal dirender saat masuk section budgeting
+      } else if (section === 'loans') {
+        renderLoansList();
+      } else if (section === 'transaksi') {
+        // Reset filter tanggal and search when entering transaction section
+        document.getElementById('filter-tanggal-dari').value = '';
+        document.getElementById('filter-tanggal-sampai').value = '';
+        document.getElementById('search-transaksi').value = '';
+        // Set 'Semua' filter button as active by default
+        const allFilterButton = document.querySelector('#transaksi-section .filter-button[onclick*="\'semua\'"]');
+        filterTransaksi('semua', allFilterButton);
+      }
+    }
+
+    // Filter transaksi (diperbarui untuk filter tanggal dan tombol aktif)
+    function filterTransaksi(jenis, clickedButton = null) {
+      // Update active state for filter buttons
+      document.querySelectorAll('#transaksi-section .filter-button').forEach(button => {
+          button.classList.remove('active');
+          button.classList.remove('bg-blue-500', 'text-white');
+          // Reset to original colors
+          if (button.textContent.includes('Pemasukan')) {
+              button.classList.add('bg-green-100', 'text-green-700');
+          } else if (button.textContent.includes('Pengeluaran')) {
+              button.classList.add('bg-red-100', 'text-red-700');
+          } else { // 'Semua'
+              button.classList.add('bg-gray-200', 'text-gray-700');
+          }
+      });
+
+      if (clickedButton) {
+          clickedButton.classList.add('active', 'bg-blue-500', 'text-white');
+          clickedButton.classList.remove('bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700', 'bg-gray-200', 'text-gray-700');
+      } else {
+          // If no button was clicked (e.g., from search/date filter), try to activate the 'all' button
+          const allButton = document.querySelector('#transaksi-section .filter-button[onclick*="\'semua\'"]');
+          if (allButton) {
+              allButton.classList.add('active', 'bg-blue-500', 'text-white');
+              allButton.classList.remove('bg-gray-200', 'text-gray-700');
+          }
+      }
+
+
+      const searchText = document.getElementById('search-transaksi').value.toLowerCase();
+      const filterDari = document.getElementById('filter-tanggal-dari').value;
+      const filterSampai = document.getElementById('filter-tanggal-sampai').value;
+      const tbody = document.getElementById('daftar-transaksi');
+      tbody.innerHTML = ''; // Clear existing rows
+
+      const sortedTransaksi = [...database.transaksi].sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+      sortedTransaksi.forEach((transaksi, index) => {
+        const tDate = new Date(transaksi.tanggal);
+        const dariDate = filterDari ? new Date(filterDari) : null;
+        const sampaiDate = filterSampai ? new Date(filterSampai) : null;
+
+        const jenisTransaksi = transaksi.jenis.toLowerCase();
+        const keterangan = (transaksi.keterangan || '').toLowerCase();
+        const kategori = (transaksi.kategori || '').toLowerCase();
+        const bank = (transaksi.bank || '').toLowerCase();
+
+        const matchesJenis = jenis === 'semua' || jenisTransaksi === jenis.replace(/_/g, ' ');
+        const matchesSearch = !searchText ||
+          transaksi.tanggal.includes(searchText) || // Search by date string
+          jenisTransaksi.includes(searchText) ||
+          bank.includes(searchText) ||
+          kategori.includes(searchText) ||
+          keterangan.includes(searchText) ||
+          formatRupiah(transaksi.jumlah).toLowerCase().includes(searchText); // Search by formatted amount
+
+        const matchesDate = (!dariDate || tDate >= dariDate) && (!sampaiDate || tDate <= sampaiDate);
+
+        if (matchesJenis && matchesSearch && matchesDate) {
+          const tr = document.createElement('tr');
+          tr.className = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+
+          if (transaksi.jenis === 'pemasukan' || transaksi.jenis === 'penerimaan_piutang' || transaksi.jenis === 'hutang') {
+            tr.classList.add('highlight-income');
+          } else if (transaksi.jenis === 'pengeluaran' || transaksi.jenis === 'piutang' || transaksi.jenis === 'pembayaran_hutang' || transaksi.jenis === 'aset') {
+            tr.classList.add('highlight-expense');
+          }
+
+          tr.innerHTML = `
+            <td class="py-2 px-4">${formatTanggal(transaksi.tanggal)}</td>
+            <td class="py-2 px-4 capitalize">${transaksi.jenis.replace(/_/g, ' ')}</td>
+            <td class="py-2 px-4">${transaksi.bank}</td>
+            <td class="py-2 px-4 capitalize">${transaksi.kategori || '-'}</td>
+            <td class="py-2 px-4">${transaksi.keterangan || '-'}</td>
+            <td class="py-2 px-4 text-right">${formatRupiah(transaksi.jumlah)}</td>
+            <td class="py-2 px-4 text-center">
+              <button onclick="editTransaksi('${transaksi.id}')" class="text-blue-500 hover:text-blue-700 mr-2">Edit</button>
+              <button onclick="confirmHapusTransaksi('${transaksi.id}')" class="text-red-500 hover:text-red-700">Hapus</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        }
+      });
+    }
+
+    // Event listeners for filter inputs
+    document.getElementById('search-transaksi').addEventListener('input', () => filterTransaksi('semua'));
+    document.getElementById('filter-tanggal-dari').addEventListener('change', () => filterTransaksi('semua'));
+    document.getElementById('filter-tanggal-sampai').addEventListener('change', () => filterTransaksi('semua'));
+
+
+    // Form tambah transaksi
+    document.getElementById('form-transaksi').addEventListener('submit', function(e) {
+      e.preventDefault();
+      hideAllErrorMessages('form-transaksi'); // Clear previous errors
+
+      const jenis = document.getElementById('jenis-transaksi').value;
+      const bank = document.getElementById('bank').value;
+      const jumlahInput = document.getElementById('jumlah');
+      const tanggalInput = document.getElementById('tanggal');
+      const keterangan = document.getElementById('keterangan').value;
+      const kategori = document.getElementById('kategori-transaksi').value; // Ambil nilai kategori
+
+      let isValid = true;
+
+      // Validate jumlah
+      const jumlah = parseInt(jumlahInput.value);
+      if (isNaN(jumlah) || jumlah <= 0) {
+        isValid = validateInput(jumlahInput, document.getElementById('error-jumlah'), val => !isNaN(val) && val > 0, 'Jumlah harus angka positif.') && isValid;
+      }
+
+      // Validate tanggal
+      const tanggal = tanggalInput.value;
+      const today = new Date().toISOString().split('T')[0];
+      if (tanggal > today) {
+        isValid = validateInput(tanggalInput, document.getElementById('error-tanggal'), val => val <= today, 'Tanggal tidak boleh di masa depan.') && isValid;
+      }
+
+      // Validasi kategori: Kategori wajib untuk semua jenis transaksi
+      if (!kategori) {
+        isValid = validateInput(document.getElementById('kategori-transaksi'), document.getElementById('error-kategori-transaksi'), val => val !== '', 'Kategori harus dipilih.') && isValid;
+      }
+
+
+      if (!isValid) {
+        showNotification('Mohon periksa kembali input Anda.', 'error');
+        return;
+      }
+
+      const transaksi = {
+        id: Date.now().toString(),
+        jenis,
+        bank,
+        jumlah,
+        tanggal,
+        keterangan,
+        kategori: kategori // Kategori selalu disimpan
+      };
+
+      database.transaksi.push(transaksi);
+      saveDatabase();
+      calculateAndStoreMonthlyInitialBalance();
+      updateUI();
+
+      this.reset();
+      document.getElementById('jenis-transaksi').value = 'pemasukan';
+      document.getElementById('bank').value = 'BCA';
+      document.getElementById('tanggal').value = new Date().toISOString().split('T')[0]; // Reset tanggal ke hari ini
+      document.getElementById('kategori-transaksi').value = ''; // Reset kategori
+      hideAllErrorMessages('form-transaksi'); // Clear all error messages after successful submission
+
+      showNotification('Transaksi berhasil disimpan!', 'success');
+    });
+
+    // Edit transaksi
+    function editTransaksi(id) {
+      const transaksi = database.transaksi.find(t => t.id === id);
+      if (!transaksi) return;
+
+      hideAllErrorMessages('form-edit-transaksi'); // Clear previous errors
+
+      document.getElementById('edit-id').value = transaksi.id;
+      document.getElementById('edit-jenis').value = transaksi.jenis;
+      document.getElementById('edit-bank').value = transaksi.bank;
+      document.getElementById('edit-jumlah').value = transaksi.jumlah;
+      document.getElementById('edit-tanggal').value = transaksi.tanggal;
+      document.getElementById('edit-keterangan').value = transaksi.keterangan || '';
+      document.getElementById('edit-kategori').value = transaksi.kategori || '';
+
+      document.getElementById('modal-edit').classList.remove('hidden');
+    }
+
+    // Form edit transaksi
+    document.getElementById('form-edit-transaksi').addEventListener('submit', function(e) {
+      e.preventDefault();
+      hideAllErrorMessages('form-edit-transaksi'); // Clear previous errors
+
+      const id = document.getElementById('edit-id').value;
+      const jenis = document.getElementById('edit-jenis').value;
+      const bank = document.getElementById('edit-bank').value;
+      const jumlahInput = document.getElementById('edit-jumlah');
+      const tanggalInput = document.getElementById('edit-tanggal');
+      const keterangan = document.getElementById('edit-keterangan').value;
+      const kategori = document.getElementById('edit-kategori').value; // Ambil nilai kategori
+
+      let isValid = true;
+
+      // Validate jumlah
+      const jumlah = parseInt(jumlahInput.value);
+      if (isNaN(jumlah) || jumlah <= 0) {
+        isValid = validateInput(jumlahInput, document.getElementById('error-edit-jumlah'), val => !isNaN(val) && val > 0, 'Jumlah harus angka positif.') && isValid;
+      }
+
+      // Validate tanggal
+      const tanggal = tanggalInput.value;
+      const today = new Date().toISOString().split('T')[0];
+      if (tanggal > today) {
+        isValid = validateInput(tanggalInput, document.getElementById('error-edit-tanggal'), val => val <= today, 'Tanggal tidak boleh di masa depan.') && isValid;
+      }
+
+      // Validasi kategori: Kategori wajib untuk semua jenis transaksi
+      if (!kategori) {
+        isValid = validateInput(document.getElementById('edit-kategori'), document.getElementById('error-edit-kategori'), val => val !== '', 'Kategori harus dipilih.') && isValid;
+      }
+
+      if (!isValid) {
+        showNotification('Mohon periksa kembali input Anda.', 'error');
+        return;
+      }
+
+      const transaksiIndex = database.transaksi.findIndex(t => t.id === id);
+      if (transaksiIndex !== -1) {
+        database.transaksi[transaksiIndex] = {
+          id,
+          jenis,
+          bank,
+          jumlah,
+          tanggal,
+          keterangan,
+          kategori: kategori // Kategori selalu disimpan
+        };
+
+        saveDatabase();
+        calculateAndStoreMonthlyInitialBalance();
+        updateUI();
+        closeModal();
+
+        showNotification('Perubahan transaksi berhasil disimpan!', 'success');
+      }
+    });
+
+    // Hapus transaksi (menggunakan konfirmasi kustom)
+    async function confirmHapusTransaksi(id) {
+      const confirmed = await showConfirmation(
+        'Hapus Transaksi',
+        'Apakah Anda yakin ingin menghapus transaksi ini? Tindakan ini tidak dapat dibatalkan.',
+        'Ya, Hapus',
+        'Batal',
+        'bg-red-500 hover:bg-red-600'
+      );
+
+      if (confirmed) {
+        database.transaksi = database.transaksi.filter(t => t.id !== id);
+        saveDatabase();
+        calculateAndStoreMonthlyInitialBalance();
+        updateUI();
+        showNotification('Transaksi berhasil dihapus!', 'success');
+      }
+    }
+
+    // Close modal
+    function closeModal() {
+      document.getElementById('modal-edit').classList.add('hidden');
+      hideAllErrorMessages('form-edit-transaksi'); // Clear error messages when closing modal
+    }
+
+    // Generate laporan
+    function generateLaporan() {
+      const dari = document.getElementById('laporan-dari').value;
+      const sampai = document.getElementById('laporan-sampai').value;
+      const jenisFilter = document.getElementById('laporan-jenis').value;
+      const bankFilter = document.getElementById('laporan-bank').value; // Menggunakan bankFilter agar tidak bentrok dengan variabel bank di loop
+      const kategori = document.getElementById('laporan-kategori').value;
+
+      let filtered = [...database.transaksi];
+
+      const dariDate = dari ? new Date(dari) : null;
+      const sampaiDate = sampai ? new Date(sampai) : null;
+
+      if (dariDate) {
+        filtered = filtered.filter(t => new Date(t.tanggal) >= dariDate);
+      }
+      if (sampaiDate) {
+        filtered = filtered.filter(t => new Date(t.tanggal) <= sampaiDate);
+      }
+
+      if (jenisFilter !== 'semua') {
+        filtered = filtered.filter(t => t.jenis === jenisFilter);
+      }
+
+      if (bankFilter !== 'semua') {
+        filtered = filtered.filter(t => t.bank === bankFilter);
+      }
+
+      if (kategori !== 'semua') {
+        filtered = filtered.filter(t => t.kategori === kategori);
+      }
+
+      filtered.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+
+      const tbody = document.getElementById('hasil-laporan');
+      tbody.innerHTML = '';
+
+      let totalPemasukan = 0;
+      let totalPengeluaran = 0;
+
+      // Calculate initial balances for the report period
+      const initialBalancesReport = {};
+      availableBanks.forEach(bankName => {
+          initialBalancesReport[bankName] = database.initialBalances[bankName] || 0;
+      });
+
+      // Adjust initial balances based on transactions *before* the report start date
+      const allTransactionsSorted = [...database.transaksi].sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+      allTransactionsSorted.forEach(transaksi => {
+          const tDate = new Date(transaksi.tanggal);
+          if (dariDate && tDate < dariDate) {
+              if (initialBalancesReport.hasOwnProperty(transaksi.bank)) {
+                  if (transaksi.jenis === 'pemasukan' || transaksi.jenis === 'hutang' || transaksi.jenis === 'penerimaan_piutang') {
+                      initialBalancesReport[transaksi.bank] += transaksi.jumlah;
+                  } else if (transaksi.jenis === 'pengeluaran' || transaksi.jenis === 'piutang' || transaksi.jenis === 'pembayaran_hutang' || transaksi.jenis === 'aset') {
+                      initialBalancesReport[transaksi.bank] -= transaksi.jumlah;
+                  }
+              }
+          }
+      });
+
+      // Calculate current balances for the report period
+      const currentBalancesReport = { ...initialBalancesReport }; // Start with initial balances of the report period
+
+      filtered.forEach(transaksi => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b';
+
+        const isIncome = (transaksi.jenis === 'pemasukan' || transaksi.jenis === 'penerimaan_piutang' || transaksi.jenis === 'hutang');
+        const isExpense = (transaksi.jenis === 'pengeluaran' || transaksi.jenis === 'piutang' || transaksi.jenis === 'pembayaran_hutang' || transaksi.jenis === 'aset');
+
+        if (isIncome) {
+          totalPemasukan += transaksi.jumlah;
+          if (currentBalancesReport.hasOwnProperty(transaksi.bank)) {
+              currentBalancesReport[transaksi.bank] += transaksi.jumlah;
+          }
+        } else if (isExpense) {
+          totalPengeluaran += transaksi.jumlah;
+          if (currentBalancesReport.hasOwnProperty(transaksi.bank)) {
+              currentBalancesReport[transaksi.bank] -= transaksi.jumlah;
+          }
+        }
+
+        tr.innerHTML = `
+          <td class="py-2 px-4">${formatTanggal(transaksi.tanggal)}</td>
+          <td class="py-2 px-4 capitalize">${transaksi.jenis.replace(/_/g, ' ')}</td>
+          <td class="py-2 px-4">${transaksi.bank}</td>
+          <td class="py-2 px-4 capitalize">${transaksi.kategori || '-'}</td>
+          <td class="py-2 px-4">${transaksi.keterangan || '-'}</td>
+          <td class="py-2 px-4 text-right ${isIncome ? 'text-green-600' : 'text-red-600'}">
+            ${formatRupiah(transaksi.jumlah)}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('laporan-total-pemasukan').textContent = formatRupiah(totalPemasukan);
+      document.getElementById('laporan-total-pengeluaran').textContent = formatRupiah(totalPengeluaran);
+      document.getElementById('laporan-saldo-bersih').textContent = formatRupiah(totalPemasukan - totalPengeluaran);
+
+      // Display detailed balances per bank
+      const saldoPerBankDiv = document.getElementById('laporan-saldo-per-bank');
+      saldoPerBankDiv.innerHTML = '';
+      availableBanks.forEach(bankName => {
+          const div = document.createElement('div');
+          div.className = 'flex flex-col p-2 border rounded-md bg-gray-50';
+          div.innerHTML = `
+              <span class="font-semibold">${bankName}:</span>
+              <span class="text-sm text-gray-600">Saldo Awal: ${formatRupiah(initialBalancesReport[bankName] || 0)}</span>
+              <span class="text-sm text-gray-600">Saldo Akhir: ${formatRupiah(currentBalancesReport[bankName] || 0)}</span>
+          `;
+          saldoPerBankDiv.appendChild(div);
+      });
+    }
+
+       // Export Excel
+    function exportExcel() {
+      const XLSX = window.XLSX;
+
+      const data = [];
+
+      data.push(['Tanggal', 'Jenis', 'Bank', 'Kategori', 'Keterangan', 'Jumlah (Rp)']);
+
+      const transaksiRows = document.getElementById('hasil-laporan').rows;
+      for (let i = 0; i < transaksiRows.length; i++) {
+        const cells = transaksiRows[i].cells;
+        data.push([
+          cells[0].textContent,
+          cells[1].textContent,
+          cells[2].textContent,
+          cells[3].textContent,
+          cells[4].textContent,
+          cells[5].textContent
+        ]);
+      }
+
+      const totalPemasukan = document.getElementById('laporan-total-pemasukan').textContent;
+      const totalPengeluaran = document.getElementById('laporan-total-pengeluaran').textContent;
+      const saldoBersih = document.getElementById('laporan-saldo-bersih').textContent;
+
+      data.push(['', '', '', '', 'Total Pemasukan:', totalPemasukan]);
+      data.push(['', '', '', '', 'Total Pengeluaran:', totalPengeluaran]);
+      data.push(['', '', '', '', 'Saldo Bersih:', saldoBersih]);
+
+      // Add bank details to Excel
+      data.push(['', '', '', '', '', '']); // Empty row for spacing
+      data.push(['', '', '', '', 'Rincian Saldo per Bank', '']);
+      const saldoPerBankDiv = document.getElementById('laporan-saldo-per-bank');
+      saldoPerBankDiv.querySelectorAll('div').forEach(bankDiv => {
+          const bankName = bankDiv.querySelector('span:nth-child(1)').textContent.replace(':', '');
+          const saldoAwal = bankDiv.querySelector('span:nth-child(2)').textContent;
+          const saldoAkhir = bankDiv.querySelector('span:nth-child(3)').textContent;
+          data.push(['', '', '', '', `${bankName} (Awal):`, saldoAwal]);
+          data.push(['', '', '', '', `${bankName} (Akhir):`, saldoAkhir]);
+      });
+
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, 'Laporan Keuangan');
+
+      XLSX.writeFile(wb, 'laporan_keuangan.xlsx');
+      showNotification('Laporan berhasil diekspor ke Excel!', 'success');
+    }
+
+    // Kirim ke WhatsApp
+    function kirimWhatsApp() {
+      let message = 'Laporan Keuangan\n\n';
+
+      const dari = document.getElementById('laporan-dari').value || 'Semua';
+      const sampai = document.getElementById('laporan-sampai').value || 'Semua';
+      const jenis = document.getElementById('laporan-jenis').options[document.getElementById('laporan-jenis').selectedIndex].text;
+      const bank = document.getElementById('laporan-bank').options[document.getElementById('laporan-bank').selectedIndex].text;
+      const kategori = document.getElementById('laporan-kategori').options[document.getElementById('laporan-kategori').selectedIndex].text;
+      const tanggalCetak = new Date().toLocaleDateString('id-ID');
+
+      message += `Periode: ${dari} - ${sampai}\n`;
+      message += `Jenis: ${jenis}\n`;
+      message += `Bank: ${bank}\n`;
+      message += `Kategori: ${kategori}\n`;
+      message += `Dicetak pada: ${tanggalCetak}\n\n`;
+
+      const transaksiRows = document.getElementById('hasil-laporan').rows;
+      for (let i = 0; i < transaksiRows.length; i++) {
+        const cells = transaksiRows[i].cells;
+        message += `${cells[0].textContent} - ${cells[1].textContent} - ${cells[2].textContent} - ${cells[3].textContent}\n`;
+        message += `${cells[4].textContent}: ${cells[5].textContent}\n\n`;
+      }
+
+      const totalPemasukan = document.getElementById('laporan-total-pemasukan').textContent;
+      const totalPengeluaran = document.getElementById('laporan-total-pengeluaran').textContent;
+      const saldoBersih = document.getElementById('laporan-saldo-bersih').textContent;
+
+      message += `\nTotal Pemasukan: ${totalPemasukan}\n`;
+      message += `Total Pengeluaran: ${totalPengeluaran}\n`;
+      message += `Saldo Bersih: ${saldoBersih}\n`;
+
+      // Add bank details to WhatsApp message
+      message += `\nRincian Saldo per Bank:\n`;
+      const saldoPerBankDiv = document.getElementById('laporan-saldo-per-bank');
+      saldoPerBankDiv.querySelectorAll('div').forEach(bankDiv => {
+          const bankName = bankDiv.querySelector('span:nth-child(1)').textContent.replace(':', '');
+          const saldoAwal = bankDiv.querySelector('span:nth-child(2)').textContent;
+          const saldoAkhir = bankDiv.querySelector('span:nth-child(3)').textContent;
+          message += `- ${bankName}: ${saldoAwal} | ${saldoAkhir}\n`;
+      });
+
+
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+
+      window.open(whatsappUrl, '_blank');
+      showNotification('Laporan dikirim ke WhatsApp!', 'info');
+    }
+
+    // Backup database
+    function backupDatabase() {
+      const data = JSON.stringify(database, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_keuangan_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      database.lastBackup = new Date().toISOString();
+      saveDatabase();
+      updateDatabaseStats();
+      showNotification('Database berhasil di-backup!', 'success');
+    }
+
+    // Restore database
+    async function restoreDatabase() {
+      const fileInput = document.getElementById('file-restore');
+      const file = fileInput.files[0];
+
+      if (!file) {
+        showNotification('Pilih file backup terlebih dahulu!', 'error');
+        return;
+      }
+
+      const confirmed = await showConfirmation(
+        'Restore Database',
+        'Ini akan menimpa data Anda saat ini. Apakah Anda yakin ingin melanjutkan?',
+        'Ya, Restore',
+        'Batal',
+        'bg-orange-500 hover:bg-orange-600'
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+
+          // Basic validation for the restored data structure
+          if (!data || !Array.isArray(data.transaksi) || !Array.isArray(data.loans) || typeof data.initialBalances !== 'object') {
+            throw new Error('Format file backup tidak valid atau rusak.');
+          }
+
+          database = data;
+          // Ensure all necessary properties exist after restoring
+          if (!database.initialBalances) database.initialBalances = {};
+          if (!database.historicalInitialBalances) database.historicalInitialBalances = {};
+          if (!database.budgets) database.budgets = {};
+          if (!database.categories || !Array.isArray(database.categories) || database.categories.length === 0) {
+            database.categories = ["makanan", "transportasi", "hiburan", "belanja", "tagihan", "pendidikan", "lain-lain"];
+          }
+          if (!database.loans) database.loans = [];
+
+
+          saveDatabase();
+          calculateAndStoreMonthlyInitialBalance();
+          updateUI();
+          updateDatabaseStats();
+          populateCategoryDropdowns();
+          renderCategoryList();
+          renderLoansList();
+          showNotification('Database berhasil di-restore!', 'success');
+        } catch (err) {
+          showNotification(`Error: ${err.message || 'File backup tidak valid atau rusak'}`, 'error');
+          console.error(err);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Update Database Stats
+    function updateDatabaseStats() {
+        const totalTransaksi = database.transaksi.length;
+        const dbSize = new TextEncoder().encode(JSON.stringify(database)).length / 1024; // in KB
+        const lastBackup = database.lastBackup ? new Date(database.lastBackup).toLocaleString('id-ID') : '-';
+
+        document.getElementById('total-transaksi').textContent = totalTransaksi;
+        document.getElementById('ukuran-database').textContent = `${dbSize.toFixed(2)} KB`;
+        document.getElementById('backup-terakhir').textContent = lastBackup;
+    }
+
+    // FUNGSI BARU: Merender input saldo awal secara dinamis
+    function renderInitialBalanceInputs() {
+      const container = document.getElementById('initial-balances-inputs');
+      if (!container) return;
+
+      container.innerHTML = '';
+
+      availableBanks.forEach(bankName => {
+        const div = document.createElement('div');
+        const inputId = `saldo-awal-${bankName.toLowerCase().replace(/\s/g, '-')}`;
+        div.innerHTML = `
+          <label for="${inputId}" class="block text-sm font-medium text-gray-700 mb-1">Saldo Awal ${bankName} (Rp)</label>
+          <input type="number" id="${inputId}" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" value="${database.initialBalances[bankName] || 0}" min="0">
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // FUNGSI BARU: Menyimpan Saldo Awal dari input dinamis
+    function saveInitialBalances() {
+      availableBanks.forEach(bankName => {
+        const inputElement = document.getElementById(`saldo-awal-${bankName.toLowerCase().replace(/\s/g, '-')}`);
+        if (inputElement) {
+          const value = parseInt(inputElement.value);
+          database.initialBalances[bankName] = isNaN(value) || value < 0 ? 0 : value; // Ensure non-negative
+        }
+      });
+
+      saveDatabase(); // Simpan perubahan ke localStorage
+      calculateAndStoreMonthlyInitialBalance(); // Hitung ulang saldo historis
+      updateUI(); // Perbarui tampilan UI
+      showNotification('Saldo awal berhasil disimpan!', 'success'); // Tampilkan notifikasi
+    }
+
+    // FUNGSI BARU: Merender Saldo Awal Historis
+    function renderHistoricalInitialBalances() {
+      const tbody = document.getElementById('historical-initial-balances-list');
+      const theadRow = document.getElementById('historical-balances-table-header');
+      if (!tbody || !theadRow) return;
+
+      tbody.innerHTML = '';
+      theadRow.innerHTML = '';
+
+      // Create header row
+      theadRow.innerHTML += `<th class="py-2 px-4 text-left">Bulan</th>`;
+      theadRow.innerHTML += `<th class="py-2 px-4 text-right">Total Saldo Awal</th>`;
+      availableBanks.forEach(bankName => {
+        theadRow.innerHTML += `<th class="py-2 px-4 text-right">${bankName}</th>`;
+      });
+      theadRow.innerHTML += `<th class="py-2 px-4 text-center">Aksi</th>`; // Tambah kolom Aksi
+
+      // Sort month keys in descending order (most recent first)
+      const sortedMonthKeys = Object.keys(database.historicalInitialBalances).sort((a, b) => {
+        const dateA = new Date(a);
+        const dateB = new Date(b);
+        return dateB - dateA;
+      });
+
+      sortedMonthKeys.forEach(monthKey => {
+        const balances = database.historicalInitialBalances[monthKey];
+        let totalMonthBalance = 0;
+
+        const bankBalancesHtml = availableBanks.map(bankName => {
+          const balance = balances[bankName] || 0;
+          totalMonthBalance += balance;
+          return `<td class="py-2 px-4 text-right">${formatRupiah(balance)}</td>`;
+        }).join('');
+
+        const [year, month] = monthKey.split('-');
+        const monthName = new Date(year, parseInt(month) - 1, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+        const tr = document.createElement('tr');
+        tr.className = 'border-b';
+        tr.innerHTML = `
+          <td class="py-2 px-4">${monthName}</td>
+          <td class="py-2 px-4 text-right font-bold">${formatRupiah(totalMonthBalance)}</td>
+          ${bankBalancesHtml}
+          <td class="py-2 px-4 text-center">
+            <button onclick="editHistoricalBalance('${monthKey}')" class="text-blue-500 hover:text-blue-700 mr-2">Edit</button>
+            <button onclick="confirmDeleteHistoricalBalance('${monthKey}')" class="text-red-500 hover:text-red-700">Hapus</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // FUNGSI BARU: Membuka modal edit saldo historis
+    function editHistoricalBalance(monthKey) {
+      const modal = document.getElementById('modal-edit-historical-balance');
+      const monthNameSpan = document.getElementById('edit-historical-month-name');
+      const monthKeyInput = document.getElementById('edit-historical-month-key');
+      const inputsContainer = document.getElementById('edit-historical-balance-inputs');
+
+      const [year, month] = monthKey.split('-');
+      monthNameSpan.textContent = new Date(year, parseInt(month) - 1, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+      monthKeyInput.value = monthKey;
+      inputsContainer.innerHTML = ''; // Clear previous inputs
+
+      const historicalBalances = database.historicalInitialBalances[monthKey] || {};
+
+      availableBanks.forEach(bankName => {
+        const div = document.createElement('div');
+        const inputId = `edit-historical-saldo-${bankName.toLowerCase().replace(/\s/g, '-')}`;
+        div.innerHTML = `
+          <label for="${inputId}" class="block text-sm font-medium text-gray-700 mb-1">Saldo Awal ${bankName} (Rp)</label>
+          <input type="number" id="${inputId}" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" value="${historicalBalances[bankName] || 0}" min="0">
+        `;
+        inputsContainer.appendChild(div);
+      });
+
+      modal.classList.remove('hidden');
+    }
+
+    // FUNGSI BARU: Menutup modal edit saldo historis
+    function closeEditHistoricalBalanceModal() {
+      document.getElementById('modal-edit-historical-balance').classList.add('hidden');
+    }
+
+    // FUNGSI BARU: Menyimpan perubahan saldo historis
+    document.getElementById('form-edit-historical-balance').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const monthKey = document.getElementById('edit-historical-month-key').value;
+      const newBalances = {};
+      let isValid = true;
+
+      availableBanks.forEach(bankName => {
+        const inputId = `edit-historical-saldo-${bankName.toLowerCase().replace(/\s/g, '-')}`;
+        const inputElement = document.getElementById(inputId);
+        if (inputElement) {
+          const value = parseInt(inputElement.value);
+          if (isNaN(value) || value < 0) {
+            isValid = false;
+            // Anda bisa menambahkan pesan error spesifik di sini jika diperlukan
+          }
+          newBalances[bankName] = isNaN(value) || value < 0 ? 0 : value;
+        }
+      });
+
+      if (!isValid) {
+        showNotification('Jumlah saldo harus angka positif atau nol.', 'error');
+        return;
+      }
+
+      database.historicalInitialBalances[monthKey] = newBalances;
+      saveDatabase();
+      updateUI();
+      closeEditHistoricalBalanceModal();
+      showNotification('Saldo awal historis berhasil diperbarui!', 'success');
+    });
+
+    // FUNGSI BARU: Mengonfirmasi dan menghapus saldo historis
+    async function confirmDeleteHistoricalBalance(monthKey) {
+      const [year, month] = monthKey.split('-');
+      const monthName = new Date(year, parseInt(month) - 1, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+      const confirmed = await showConfirmation(
+        'Hapus Saldo Historis',
+        `Apakah Anda yakin ingin menghapus saldo awal historis untuk bulan ${monthName}? Tindakan ini tidak dapat dibatalkan.`,
+        'Ya, Hapus',
+        'Batal',
+        'bg-red-500 hover:bg-red-600'
+      );
+
+      if (confirmed) {
+        delete database.historicalInitialBalances[monthKey];
+        saveDatabase();
+        updateUI();
+        showNotification('Saldo awal historis berhasil dihapus!', 'success');
+      }
+    }
+
+    // BARU: Fungsi untuk mengisi dropdown kategori
+    function populateCategoryDropdowns() {
+      const selectElements = document.querySelectorAll('#kategori-transaksi, #edit-kategori, #laporan-kategori');
+      selectElements.forEach(select => {
+        const currentSelectedValue = select.value; // Preserve current selection if any
+        select.innerHTML = ''; // Clear existing options
+
+        // Add default "Pilih Kategori" or "Semua Kategori" option
+        if (select.id === 'laporan-kategori') {
+          const defaultOption = document.createElement('option');
+          defaultOption.value = 'semua';
+          defaultOption.textContent = 'Semua Kategori';
+          select.appendChild(defaultOption);
+        } else {
+          const defaultOption = document.createElement('option');
+          defaultOption.value = '';
+          defaultOption.textContent = 'Pilih Kategori';
+          select.appendChild(defaultOption);
+        }
+
+        // Add dynamic categories
+        database.categories.forEach(category => {
+          const option = document.createElement('option');
+          option.value = category;
+          option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+          select.appendChild(option);
+        });
+
+        // Restore previous selection
+        select.value = currentSelectedValue;
+      });
+    }
+
+    // BARU: Fungsi untuk menampilkan daftar kategori
+    function renderCategoryList() {
+      const categoryListDiv = document.getElementById('category-list');
+      if (!categoryListDiv) return;
+      categoryListDiv.innerHTML = '';
+      if (database.categories.length === 0) {
+        categoryListDiv.innerHTML = '<p class="text-gray-500">Belum ada kategori. Tambahkan kategori baru di bawah.</p>';
+        return;
+      }
+      database.categories.forEach(category => {
+        const div = document.createElement('div');
+        div.className = 'flex justify-between items-center py-1 px-2 bg-gray-50 rounded-md mb-1';
+        div.innerHTML = `
+          <span>${category.charAt(0).toUpperCase() + category.slice(1)}</span>
+          <button onclick="confirmDeleteCategory('${category}')" class="text-red-500 hover:text-red-700 text-sm">Hapus</button>
+        `;
+        categoryListDiv.appendChild(div);
+      });
+    }
+
+    // BARU: Fungsi untuk menambah kategori
+    function addCategory() {
+      const newCategoryNameInput = document.getElementById('new-category-name');
+      const newCategoryName = newCategoryNameInput.value.trim().toLowerCase();
+      if (newCategoryName) {
+        if (!database.categories.includes(newCategoryName)) {
+          database.categories.push(newCategoryName);
+          saveDatabase();
+          renderCategoryList();
+          populateCategoryDropdowns();
+          newCategoryNameInput.value = '';
+          showNotification('Kategori berhasil ditambahkan!', 'success');
+        } else {
+          showNotification('Kategori sudah ada!', 'error');
+        }
+      } else {
+        showNotification('Nama kategori tidak boleh kosong!', 'error');
+      }
+    }
+
+    // BARU: Fungsi untuk menghapus kategori (menggunakan konfirmasi kustom)
+    async function confirmDeleteCategory(categoryToDelete) {
+      const confirmed = await showConfirmation(
+        'Hapus Kategori',
+        `Apakah Anda yakin ingin menghapus kategori "${categoryToDelete}"? Transaksi yang sudah ada dengan kategori ini tidak akan berubah.`,
+        'Ya, Hapus',
+        'Batal',
+        'bg-red-500 hover:bg-red-600'
+      );
+
+      if (confirmed) {
+        database.categories = database.categories.filter(cat => cat !== categoryToDelete);
+        saveDatabase();
+        renderCategoryList();
+        populateCategoryDropdowns();
+        showNotification('Kategori berhasil dihapus!', 'success');
+      }
+    }
+
+    // BARU: Fungsi untuk memuat dan menampilkan input anggaran untuk bulan tertentu
+    function loadBudgetForMonth() {
+      const budgetMonthSelector = document.getElementById('budget-month-selector');
+      const selectedMonth = budgetMonthSelector.value;
+      const budgetInputsDiv = document.getElementById('budget-inputs');
+      if (!budgetInputsDiv) return;
+      budgetInputsDiv.innerHTML = '';
+
+      if (!selectedMonth) {
+        budgetInputsDiv.innerHTML = '<p class="text-gray-500">Pilih bulan untuk mengatur anggaran.</p>';
+        return;
+      }
+
+      const currentMonthBudget = database.budgets[selectedMonth] || {};
+
+      if (database.categories.length === 0) {
+        budgetInputsDiv.innerHTML = '<p class="text-gray-500">Tambahkan kategori terlebih dahulu di bagian "Daftar Kategori" untuk mengatur anggaran.</p>';
+        return;
+      }
+
+      database.categories.forEach(category => {
+        const div = document.createElement('div');
+        const inputId = `budget-${selectedMonth}-${category.replace(/\s/g, '-')}`;
+        const currentValue = currentMonthBudget[category] || 0;
+        div.innerHTML = `
+          <label for="${inputId}" class="block text-sm font-medium text-gray-700 mb-1">${category.charAt(0).toUpperCase() + category.slice(1)} (Rp)</label>
+          <input type="number" id="${inputId}" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" value="${currentValue}" min="0">
+        `;
+        budgetInputsDiv.appendChild(div);
+      });
+    }
+
+    // BARU: Fungsi untuk menyimpan anggaran
+    function saveBudget() {
+      const budgetMonthSelector = document.getElementById('budget-month-selector');
+      const selectedMonth = budgetMonthSelector.value;
+
+      if (!selectedMonth) {
+        showNotification('Pilih bulan terlebih dahulu!', 'error');
+        return;
+      }
+
+      const newBudget = {};
+      let allInputsValid = true;
+      database.categories.forEach(category => {
+        const inputId = `budget-${selectedMonth}-${category.replace(/\s/g, '-')}`;
+        const inputElement = document.getElementById(inputId);
+        if (inputElement) {
+          const value = parseInt(inputElement.value);
+          if (isNaN(value) || value < 0) {
+            allInputsValid = false;
+            // Optionally, add visual feedback for invalid input here
+          }
+          newBudget[category] = isNaN(value) || value < 0 ? 0 : value;
+        }
+      });
+
+      if (!allInputsValid) {
+        showNotification('Anggaran harus angka positif atau nol.', 'error');
+        return;
+      }
+
+      database.budgets[selectedMonth] = newBudget;
+      saveDatabase();
+      updateUI();
+      showNotification('Anggaran berhasil disimpan!', 'success');
+    }
+
+    // --- FUNGSI BARU UNTUK MANAJEMEN PINJAMAN ---
+
+    // Fungsi untuk merender daftar pinjaman
+    function renderLoansList() {
+      const tbody = document.getElementById('loans-list');
+      tbody.innerHTML = '';
+
+      if (database.loans.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-gray-500">Belum ada pinjaman yang tercatat.</td></tr>';
+        return;
+      }
+
+      database.loans.forEach(loan => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b';
+        tr.innerHTML = `
+          <td class="py-2 px-4">${loan.name}</td>
+          <td class="py-2 px-4 text-right">${formatRupiah(loan.principalAmount)}</td>
+          <td class="py-2 px-4 text-right">${formatRupiah(loan.currentPrincipal)}</td>
+          <td class="py-2 px-4 text-right">${loan.interestRate}%</td>
+          <td class="py-2 px-4 text-right">${loan.termMonths} bulan</td>
+          <td class="py-2 px-4">${loan.status}</td>
+          <td class="py-2 px-4 text-center">
+            <button onclick="viewLoanDetail('${loan.id}')" class="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 mr-1">Detail</button>
+            <button onclick="confirmDeleteLoan('${loan.id}')" class="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">Hapus</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Fungsi untuk menghitung jadwal amortisasi
+    function calculateAmortizationSchedule(loan) {
+      const schedule = [];
+      const P = loan.principalAmount;
+      const r = loan.interestRate / 100 / 12; // Monthly interest rate
+      const n = loan.termMonths;
+
+      if (loan.method === 'Flat') {
+        const monthlyPrincipal = P / n;
+        const monthlyInterest = (P * loan.interestRate / 100) / 12; // Total interest / 12 months
+        for (let i = 1; i <= n; i++) {
+          schedule.push({
+            month: i,
+            principalPortion: monthlyPrincipal,
+            interestPortion: monthlyInterest,
+            totalPayment: monthlyPrincipal + monthlyInterest,
+            remainingPrincipal: P - monthlyPrincipal * i
+          });
+        }
+      } else if (loan.method === 'Anuitas') {
+        if (r === 0) { // Handle 0% interest rate
+            const monthlyPayment = P / n;
+            let remainingPrincipal = P;
+            for (let i = 1; i <= n; i++) {
+                remainingPrincipal -= monthlyPayment;
+                schedule.push({
+                    month: i,
+                    principalPortion: monthlyPayment,
+                    interestPortion: 0,
+                    totalPayment: monthlyPayment,
+                    remainingPrincipal: remainingPrincipal > 0 ? remainingPrincipal : 0
+                });
+            }
+        } else {
+            const A = P * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1); // Monthly payment
+            let remainingPrincipal = P;
+            for (let i = 1; i <= n; i++) {
+                const interestPortion = remainingPrincipal * r;
+                const principalPortion = A - interestPortion;
+                remainingPrincipal -= principalPortion;
+                remainingPrincipal = Math.max(0, remainingPrincipal); // Ensure remaining principal doesn't go negative
+                schedule.push({
+                    month: i,
+                    principalPortion,
+                    interestPortion,
+                    totalPayment: A,
+                    remainingPrincipal: remainingPrincipal
+                });
+            }
+        }
+      }
+      return schedule;
+    }
+
+    // Fungsi untuk menampilkan detail pinjaman
+    let currentLoanId = null;
+    function viewLoanDetail(loanId) {
+      currentLoanId = loanId;
+      const loan = database.loans.find(l => l.id === loanId);
+      if (!loan) return;
+
+      document.getElementById('detail-loan-name').textContent = loan.name;
+      document.getElementById('detail-loan-principal').textContent = formatRupiah(loan.principalAmount);
+      document.getElementById('detail-loan-current-principal').textContent = formatRupiah(loan.currentPrincipal);
+      document.getElementById('detail-loan-interest-rate').textContent = loan.interestRate;
+      document.getElementById('detail-loan-term').textContent = loan.termMonths;
+      document.getElementById('detail-loan-method').textContent = loan.method;
+      document.getElementById('detail-loan-bank').textContent = loan.bank;
+      document.getElementById('detail-loan-total-interest-paid').textContent = formatRupiah(loan.totalInterestPaid);
+      document.getElementById('detail-loan-total-principal-paid').textContent = formatRupiah(loan.totalPrincipalPaid);
+      document.getElementById('detail-loan-status').textContent = loan.status;
+
+      const payButton = document.getElementById('pay-loan-button');
+      if (loan.status === 'Aktif') {
+        payButton.classList.remove('hidden');
+      } else {
+        payButton.classList.add('hidden');
+      }
+
+      const scheduleTbody = document.getElementById('loan-amortization-schedule');
+      scheduleTbody.innerHTML = '';
+      const amortizationSchedule = calculateAmortizationSchedule(loan);
+      amortizationSchedule.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        // Check if this month's payment has been made
+        const isPaid = loan.payments.length > index;
+        tr.className = isPaid ? 'bg-green-50' : 'bg-white';
+        tr.innerHTML = `
+          <td class="py-2 px-4">${item.month}</td>
+          <td class="py-2 px-4 text-right">${formatRupiah(item.totalPayment)}</td>
+          <td class="py-2 px-4 text-right">${formatRupiah(item.principalPortion)}</td>
+          <td class="py-2 px-4 text-right">${formatRupiah(item.interestPortion)}</td>
+          <td class="py-2 px-4 text-right">${formatRupiah(item.remainingPrincipal)}</td>
+          <td class="py-2 px-4 text-center">${isPaid ? 'Lunas' : 'Belum'}</td>
+        `;
+        scheduleTbody.appendChild(tr);
+      });
+
+      const historyTbody = document.getElementById('loan-payment-history');
+      historyTbody.innerHTML = '';
+      if (loan.payments.length === 0) {
+        historyTbody.innerHTML = '<tr><td colspan="4" class="py-2 text-center text-gray-500">Belum ada pembayaran.</td></tr>';
+      } else {
+        loan.payments.forEach(payment => {
+          const tr = document.createElement('tr');
+          tr.className = 'border-b';
+          tr.innerHTML = `
+            <td class="py-2 px-4">${formatTanggal(payment.date)}</td>
+            <td class="py-2 px-4 text-right">${formatRupiah(payment.amount)}</td>
+            <td class="py-2 px-4 text-right">${formatRupiah(payment.principalPortion)}</td>
+            <td class="py-2 px-4 text-right">${formatRupiah(payment.interestPortion)}</td>
+          `;
+          historyTbody.appendChild(tr);
+        });
+      }
+
+      document.getElementById('modal-loan-detail').classList.remove('hidden');
+    }
+
+    function closeLoanDetailModal() {
+      document.getElementById('modal-loan-detail').classList.add('hidden');
+      currentLoanId = null;
+    }
+
+    function openPayLoanModal() {
+      const loan = database.loans.find(l => l.id === currentLoanId);
+      if (!loan) return;
+
+      hideAllErrorMessages('form-pay-loan'); // Clear previous errors
+
+      document.getElementById('pay-loan-id').value = loan.id;
+      document.getElementById('pay-loan-name').textContent = loan.name;
+
+      const amortizationSchedule = calculateAmortizationSchedule(loan);
+      const nextPaymentIndex = loan.payments.length;
+      if (nextPaymentIndex < amortizationSchedule.length) {
+        // Suggest the scheduled payment amount for the next month
+        document.getElementById('pay-loan-amount').value = Math.round(amortizationSchedule[nextPaymentIndex].totalPayment);
+      } else {
+        // If all scheduled payments are done, suggest remaining principal (for overpayment/early settlement)
+        document.getElementById('pay-loan-amount').value = Math.round(loan.currentPrincipal);
+      }
+      document.getElementById('pay-loan-date').value = new Date().toISOString().split('T')[0];
+
+      document.getElementById('modal-pay-loan').classList.remove('hidden');
+    }
+
+    function closePayLoanModal() {
+      document.getElementById('modal-pay-loan').classList.add('hidden');
+      hideAllErrorMessages('form-pay-loan'); // Clear error messages when closing modal
+    }
+
+    // Event listener untuk form tambah pinjaman
+    document.getElementById('form-add-loan').addEventListener('submit', function(e) {
+      e.preventDefault();
+      hideAllErrorMessages('form-add-loan'); // Clear previous errors
+
+      const nameInput = document.getElementById('loan-name');
+      const principalInput = document.getElementById('loan-principal');
+      const interestInput = document.getElementById('loan-interest-rate');
+      const termInput = document.getElementById('loan-term');
+      const startDateInput = document.getElementById('loan-start-date');
+
+      let isValid = true;
+
+      // Validate name
+      if (nameInput.value.trim() === '') {
+        isValid = validateInput(nameInput, document.getElementById('error-loan-name'), val => val.trim() !== '', 'Nama pinjaman tidak boleh kosong.') && isValid;
+      }
+
+      // Validate principal
+      const principalAmount = parseInt(principalInput.value);
+      if (isNaN(principalAmount) || principalAmount <= 0) {
+        isValid = validateInput(principalInput, document.getElementById('error-loan-principal'), val => !isNaN(val) && val > 0, 'Pokok pinjaman harus lebih dari 0.') && isValid;
+      }
+
+      // Validate interest rate
+      const interestRate = parseFloat(interestInput.value);
+      if (isNaN(interestRate) || interestRate < 0) {
+        isValid = validateInput(interestInput, document.getElementById('error-loan-interest-rate'), val => !isNaN(val) && val >= 0, 'Suku bunga tidak boleh negatif.') && isValid;
+      }
+
+      // Validate term
+      const termMonths = parseInt(termInput.value);
+      if (isNaN(termMonths) || termMonths <= 0) {
+        isValid = validateInput(termInput, document.getElementById('error-loan-term'), val => !isNaN(val) && val > 0, 'Jangka waktu harus lebih dari 0.') && isValid;
+      }
+
+      // Validate start date
+      const startDate = startDateInput.value;
+      const today = new Date().toISOString().split('T')[0];
+      if (startDate > today) {
+        isValid = validateInput(startDateInput, document.getElementById('error-loan-start-date'), val => val <= today, 'Tanggal mulai tidak boleh di masa depan.') && isValid;
+      }
+
+      if (!isValid) {
+        showNotification('Mohon periksa kembali input Anda.', 'error');
+        return;
+      }
+
+      const newLoan = {
+        id: 'loan_' + Date.now(),
+        name: nameInput.value,
+        principalAmount,
+        interestRate,
+        termMonths,
+        startDate,
+        method: document.getElementById('loan-method').value,
+        bank: document.getElementById('loan-bank').value,
+        currentPrincipal: principalAmount, // Initial current principal is the full principal amount
+        totalInterestPaid: 0,
+        totalPrincipalPaid: 0,
+        payments: [], // Array to store payment history
+        status: 'Aktif'
+      };
+
+      database.loans.push(newLoan);
+
+      // Add a corresponding 'hutang' transaction for the loan receipt
+      database.transaksi.push({
+        id: 'trx_' + Date.now(),
+        jenis: 'hutang',
+        bank: newLoan.bank,
+        jumlah: principalAmount,
+        tanggal: startDate,
+        keterangan: `Penerimaan pinjaman: ${newLoan.name}`,
+        kategori: '', // Loans don't typically have a category in this context
+        isLoanRelated: true // Flag to identify loan-related transactions
+      });
+
+      saveDatabase();
+      calculateAndStoreMonthlyInitialBalance();
+      updateUI();
+      renderLoansList();
+
+      this.reset();
+      document.getElementById('loan-start-date').value = new Date().toISOString().split('T')[0]; // Reset date to today
+      hideAllErrorMessages('form-add-loan'); // Clear all error messages after successful submission
+
+      showNotification('Pinjaman berhasil ditambahkan!', 'success');
+    });
+
+    // Event listener untuk form pembayaran cicilan
+    document.getElementById('form-pay-loan').addEventListener('submit', function(e) {
+      e.preventDefault();
+      hideAllErrorMessages('form-pay-loan'); // Clear previous errors
+
+      const loanId = document.getElementById('pay-loan-id').value;
+      const amountInput = document.getElementById('pay-loan-amount');
+      const dateInput = document.getElementById('pay-loan-date');
+
+      let isValid = true;
+
+      // Validate amount
+      const amount = parseInt(amountInput.value);
+      if (isNaN(amount) || amount <= 0) {
+        isValid = validateInput(amountInput, document.getElementById('error-pay-loan-amount'), val => !isNaN(val) && val > 0, 'Jumlah pembayaran harus lebih dari 0.') && isValid;
+      }
+
+      // Validate date
+      const date = dateInput.value;
+      const today = new Date().toISOString().split('T')[0];
+      if (date > today) {
+        isValid = validateInput(dateInput, document.getElementById('error-pay-loan-date'), val => val <= today, 'Tanggal pembayaran tidak boleh di masa depan.') && isValid;
+      }
+
+      if (!isValid) {
+        showNotification('Mohon periksa kembali input Anda.', 'error');
+        return;
+      }
+
+      const loan = database.loans.find(l => l.id === loanId);
+      if (!loan) {
+        showNotification('Pinjaman tidak ditemukan.', 'error');
+        return;
+      }
+      if (loan.status === 'Lunas') {
+        showNotification('Pinjaman ini sudah lunas.', 'info');
+        return;
+      }
+
+      const amortizationSchedule = calculateAmortizationSchedule(loan);
+      const nextPaymentIndex = loan.payments.length; // Number of payments already made
+
+      let principalPortion = 0;
+      let interestPortion = 0;
+      let paymentAmountToApply = amount;
+
+      // Determine principal and interest portions based on loan method and payment stage
+      if (loan.method === 'Anuitas') {
+          if (nextPaymentIndex < amortizationSchedule.length) {
+              // If there are scheduled payments remaining
+              const scheduledPayment = amortizationSchedule[nextPaymentIndex];
+              interestPortion = Math.min(scheduledPayment.interestPortion, paymentAmountToApply);
+              principalPortion = Math.min(scheduledPayment.principalPortion, paymentAmountToApply - interestPortion);
+
+              // If payment is more than scheduled, the excess goes to principal
+              if (paymentAmountToApply > scheduledPayment.totalPayment) {
+                  const excess = paymentAmountToApply - scheduledPayment.totalPayment;
+                  principalPortion += excess;
+              }
+          } else {
+              // If all scheduled payments are done, any payment goes fully to principal
+              principalPortion = paymentAmountToApply;
+              interestPortion = 0;
+          }
+      } else { // Flat method
+          if (nextPaymentIndex < amortizationSchedule.length) {
+              // If there are scheduled payments remaining
+              const scheduledPayment = amortizationSchedule[nextPaymentIndex];
+              interestPortion = scheduledPayment.interestPortion; // Flat interest is fixed per period
+              principalPortion = scheduledPayment.principalPortion; // Flat principal is fixed per period
+
+              // If payment is more than scheduled, the excess goes to principal
+              if (paymentAmountToApply > scheduledPayment.totalPayment) {
+                  const excess = paymentAmountToApply - scheduledPayment.totalPayment;
+                  principalPortion += excess;
+              }
+          } else {
+              // If all scheduled payments are done, any payment goes fully to principal
+              principalPortion = paymentAmountToApply;
+              interestPortion = 0;
+          }
+      }
+
+      // Ensure principal portion does not exceed remaining principal
+      principalPortion = Math.min(principalPortion, loan.currentPrincipal);
+      // Adjust interest portion if payment is less than calculated interest
+      interestPortion = Math.min(interestPortion, amount - principalPortion);
+
+
+      loan.currentPrincipal -= principalPortion;
+      loan.totalPrincipalPaid += principalPortion;
+      loan.totalInterestPaid += interestPortion;
+
+      loan.payments.push({
+        date: date,
+        amount: amount,
+        principalPortion: principalPortion,
+        interestPortion: interestPortion
+      });
+
+      if (loan.currentPrincipal <= 0) {
+        loan.status = 'Lunas';
+        loan.currentPrincipal = 0; // Ensure it's exactly 0
+      }
+
+      // Record the payment as a 'pembayaran_hutang' transaction
+      database.transaksi.push({
+        id: 'trx_' + Date.now(),
+        jenis: 'pembayaran_hutang',
+        bank: loan.bank,
+        jumlah: amount,
+        tanggal: date,
+        keterangan: `Pembayaran cicilan: ${loan.name}`,
+        kategori: '',
+        isLoanRelated: true
+      });
+
+      saveDatabase();
+      calculateAndStoreMonthlyInitialBalance();
+      updateUI();
+      renderLoansList();
+      viewLoanDetail(loanId); // Re-open detail modal to show updated status
+      closePayLoanModal();
+      showNotification('Pembayaran cicilan berhasil dicatat!', 'success');
+    });
+
+    // Fungsi untuk menghapus pinjaman (menggunakan konfirmasi kustom)
+    async function confirmDeleteLoan(loanId) {
+      const confirmed = await showConfirmation(
+        'Hapus Pinjaman',
+        'Apakah Anda yakin ingin menghapus pinjaman ini? Ini tidak akan menghapus transaksi terkait yang sudah tercatat.',
+        'Ya, Hapus',
+        'Batal',
+        'bg-red-500 hover:bg-red-600'
+      );
+
+      if (confirmed) {
+        database.loans = database.loans.filter(l => l.id !== loanId);
+        saveDatabase();
+        calculateAndStoreMonthlyInitialBalance();
+        updateUI();
+        renderLoansList();
+        showNotification('Pinjaman berhasil dihapus.', 'success');
+      }
+    }
+
+    // Inisialisasi aplikasi saat pertama kali dijalankan
+    window.onload = function() {
+      loadDatabase();
+
+      // Set default dates to today
+      const todayDate = new Date().toISOString().split('T')[0];
+      document.getElementById('tanggal').value = todayDate;
+      document.getElementById('edit-tanggal').value = todayDate;
+      document.getElementById('loan-start-date').value = todayDate;
+
+      // Set default date range for reports (e.g., last 7 days)
+      const lastWeek = new Date();
+      lastWeek.setDate(lastWeek.getDate() - 7);
+      document.getElementById('laporan-dari').value = lastWeek.toISOString().split('T')[0];
+      document.getElementById('laporan-sampai').value = todayDate;
+
+      // Set default month for budgeting
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = (today.getMonth() + 1).toString().padStart(2, '0');
+      document.getElementById('budget-month-selector').value = `${year}-${month}`;
+
+      // Initial filter for transactions (show all and activate the 'Semua' button)
+      const allFilterButton = document.querySelector('#transaksi-section .filter-button[onclick*="\'semua\'"]');
+      if (allFilterButton) {
+          filterTransaksi('semua', allFilterButton);
+      } else {
+          filterTransaksi('semua'); // Fallback if button not found
+      }
+    };
+  </script>
+</body>
+</html>
