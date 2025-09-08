@@ -895,6 +895,7 @@
       renderHistoricalInitialBalances();
       renderLoansList();
       renderInitialBalanceInputs(); // Pastikan ini juga dipanggil di updateUI
+      // calculateAndDisplayDailyBudget(); // Panggil fungsi baru di sini, tapi akan dipanggil di updateFinancialSummary
     }
 
     // Fungsi untuk menghasilkan warna acak yang cerah
@@ -1289,6 +1290,17 @@
           <p class="text-xs mt-1 ${budgetTextColor}">Sisa Anggaran: ${formatRupiah(remainingBudget)}</p>
         </div>
       `;
+      // Tambahkan elemen untuk Anggaran Harian Ideal di sini
+      summaryGrid.innerHTML += `
+        <div class="bg-blue-50 p-4 rounded-lg shadow-sm border-l-4 border-blue-600 md:col-span-full lg:col-span-1">
+          <h3 class="font-semibold text-gray-700 text-sm">Anggaran Harian Ideal (Dinamis)</h3>
+          <p class="text-xl font-bold mt-1" id="daily-budget-display">Rp0</p>
+          <p class="text-xs text-gray-500" id="daily-budget-info"></p>
+        </div>
+      `;
+
+      // Panggil fungsi anggaran harian dinamis setelah semua data ringkasan dihitung
+      calculateAndDisplayDailyBudget(totalBudgetedExpense, totalActualExpenseForBudget);
     }
 
     // Update daftar transaksi
@@ -1421,7 +1433,7 @@
       sortedTransaksi.forEach((transaksi, index) => {
         const tDate = new Date(transaksi.tanggal);
         const dariDate = filterDari ? new Date(filterDari) : null;
-        const sampaiDate = filterSampai ? new Date(filterSampai) : null;
+        const sampaiDate = filterSampai ? new Date(sampai) : null;
 
         const jenisTransaksi = transaksi.jenis.toLowerCase();
         const keterangan = (transaksi.keterangan || '').toLowerCase();
@@ -2689,6 +2701,60 @@
         updateUI();
         renderLoansList();
         showNotification('Pinjaman berhasil dihapus.', 'success');
+      }
+    }
+
+    // FUNGSI BARU: Menghitung dan Menampilkan Anggaran Harian Ideal (Dinamis)
+    function calculateAndDisplayDailyBudget(totalBudgetedExpense, totalActualExpenseForBudget) {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth(); // 0-indexed
+      const day = today.getDate(); // 1-indexed
+
+      const currentMonthKey = `${year}-${(month + 1).toString().padStart(2, '0')}`;
+
+      // Total anggaran bulanan (sudah dihitung di updateFinancialSummary)
+      const totalBudget = totalBudgetedExpense;
+      // Total pengeluaran aktual bulan ini (sudah dihitung di updateFinancialSummary)
+      const actualExpense = totalActualExpenseForBudget;
+
+      const remainingBudget = totalBudget - actualExpense;
+
+      // Hitung jumlah hari di bulan ini
+      const lastDayOfMonth = new Date(year, month + 1, 0).getDate(); // e.g., 31 for August
+
+      // Hitung sisa hari di bulan ini (termasuk hari ini)
+      const remainingDays = lastDayOfMonth - day + 1;
+
+      let dailyBudget = 0;
+      let infoText = '';
+
+      if (totalBudget <= 0) {
+          dailyBudget = 0;
+          infoText = `Belum ada anggaran bulanan yang ditetapkan.`;
+      } else if (remainingDays <= 0) {
+          dailyBudget = 0;
+          infoText = `Bulan telah berakhir atau sisa hari 0.`;
+      } else {
+          dailyBudget = remainingBudget / remainingDays;
+          infoText = `Dari sisa anggaran ${formatRupiah(remainingBudget)} untuk ${remainingDays} hari tersisa.`;
+      }
+
+      const dailyBudgetDisplay = document.getElementById('daily-budget-display');
+      const dailyBudgetInfo = document.getElementById('daily-budget-info');
+
+      if (dailyBudgetDisplay && dailyBudgetInfo) {
+          dailyBudgetDisplay.textContent = formatRupiah(dailyBudget);
+          dailyBudgetInfo.textContent = infoText;
+
+          // Opsional: Beri warna jika anggaran harian negatif
+          if (dailyBudget < 0) {
+              dailyBudgetDisplay.classList.add('text-red-600');
+              dailyBudgetDisplay.classList.remove('text-green-600');
+          } else {
+              dailyBudgetDisplay.classList.add('text-green-600');
+              dailyBudgetDisplay.classList.remove('text-red-600');
+          }
       }
     }
 
