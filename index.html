@@ -62,9 +62,153 @@
         background-color: #3B82F6; /* blue-500 */
         color: white;
     }
+
+    /* Dark Mode Styles */
+    body.dark {
+      background-color: #1a202c; /* Dark gray background */
+      color: #e2e8f0; /* Light gray text */
+    }
+    body.dark .bg-white {
+      background-color: #2d3748; /* Darker background for cards */
+    }
+    body.dark .text-gray-800 {
+      color: #e2e8f0;
+    }
+    body.dark .text-gray-600 {
+      color: #a0aec0;
+    }
+    body.dark .bg-gray-100 {
+      background-color: #4a5568; /* Darker background for table headers */
+    }
+    body.dark .border-gray-300 {
+      border-color: #4a5568;
+    }
+    body.dark .shadow-lg {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+    }
+    body.dark .bg-gray-50 {
+      background-color: #2d3748;
+    }
+    body.dark .responsive-table tr:nth-child(even) {
+      background-color: #2d3748; /* Even rows in dark mode */
+    }
+    body.dark .responsive-table tr:nth-child(odd) {
+      background-color: #1a202c; /* Odd rows in dark mode */
+    }
+    body.dark .highlight-income {
+      background-color: rgba(74, 222, 128, 0.1); /* Lighter green for dark mode */
+    }
+    body.dark .highlight-expense {
+      background-color: rgba(248, 113, 113, 0.1); /* Lighter red for dark mode */
+    }
+    body.dark .notification.success {
+      background-color: #1a472a;
+      color: #68d391;
+      border: 1px solid #2f855a;
+    }
+    body.dark .notification.error {
+      background-color: #4a0e1e;
+      color: #fc8181;
+      border: 1px solid #9b2c2c;
+    }
+    body.dark .notification.info {
+      background-color: #1a365d;
+      color: #63b3ed;
+      border: 1px solid #2b6cb0;
+    }
+    body.dark input, body.dark select, body.dark textarea {
+      background-color: #4a5568;
+      color: #e2e8f0;
+      border-color: #6b7280;
+    }
+    body.dark input::placeholder, body.dark textarea::placeholder {
+      color: #a0aec0;
+    }
+    body.dark .filter-button {
+      background-color: #4a5568;
+      color: #e2e8f0;
+    }
+    body.dark .filter-button.active {
+      background-color: #3B82F6; /* blue-500 */
+      color: white;
+    }
+    body.dark .bg-blue-50 { background-color: #2a4365; }
+    body.dark .border-blue-600 { border-color: #4299e1; }
+    body.dark .bg-purple-50 { background-color: #44337a; }
+    body.dark .border-purple-500 { border-color: #9f7aea; }
+    body.dark .bg-green-50 { background-color: #22543d; }
+    body.dark .border-green-600 { border-color: #48bb78; }
+    body.dark .bg-red-50 { background-color: #63171b; }
+    body.dark .border-red-600 { border-color: #f56565; }
+    body.dark .bg-yellow-50 { background-color: #634d2c; }
+    body.dark .border-yellow-600 { border-color: #ecc94b; }
+    body.dark .bg-orange-50 { background-color: #653a0f; }
+    body.dark .border-orange-600 { border-color: #ed8936; }
+
+    /* Toggle Switch Styles */
+    .toggle-switch {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 1001; /* Above notifications */
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .toggle-switch input[type="checkbox"] {
+      height: 0;
+      width: 0;
+      visibility: hidden;
+    }
+    .toggle-switch label {
+      cursor: pointer;
+      text-indent: -9999px;
+      width: 40px;
+      height: 20px;
+      background: #ccc;
+      display: block;
+      border-radius: 10px;
+      position: relative;
+    }
+    .toggle-switch label:after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 9px;
+      transition: 0.3s;
+    }
+    .toggle-switch input:checked + label {
+      background: #3B82F6; /* blue-500 */
+    }
+    .toggle-switch input:checked + label:after {
+      left: calc(100% - 2px);
+      transform: translateX(-100%);
+    }
+    .toggle-switch label:active:after {
+      width: 20px;
+    }
+    .toggle-switch .icon {
+      font-size: 1.2rem;
+      color: #4a5568; /* Default icon color */
+    }
+    body.dark .toggle-switch .icon {
+      color: #e2e8f0; /* Icon color in dark mode */
+    }
   </style>
 </head>
 <body class="bg-gray-100">
+  <!-- Dark Mode Toggle Switch -->
+  <div class="toggle-switch">
+    <span class="icon">☀️</span>
+    <input type="checkbox" id="darkModeToggle">
+    <label for="darkModeToggle"></label>
+    <span class="icon">🌙</span>
+  </div>
+
   <div class="container mx-auto px-4 py-8 max-w-6xl">
     <div class="bg-white rounded-lg shadow-lg p-6">
       <div class="flex flex-col md:flex-row justify-between items-center mb-8">
@@ -783,6 +927,27 @@
       categories: ["makanan", "transportasi", "hiburan", "belanja", "tagihan", "pendidikan", "lain-lain"]
     };
 
+    // --- Dark Mode Toggle Logic ---
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const body = document.body;
+
+    // Check for saved theme preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      body.classList.add('dark');
+      darkModeToggle.checked = true;
+    }
+
+    darkModeToggle.addEventListener('change', () => {
+      if (darkModeToggle.checked) {
+        body.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        body.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+    });
+
     // --- Custom Notification System ---
     let notificationTimeout;
     function showNotification(message, type = 'info', duration = 3000) {
@@ -889,12 +1054,13 @@
     // Update UI berdasarkan data
     function updateUI() {
       updateFinancialSummary();
-      // updateDaftarTransaksi(); // This will be called by filterTransaksi with default 'semua'
+      updateDaftarTransaksi(); // <--- PASTIKAN BARIS INI TIDAK DIKOMENTARI
       updateTransaksiTerakhir();
       renderCharts();
       renderHistoricalInitialBalances();
       renderLoansList();
       renderInitialBalanceInputs(); // Pastikan ini juga dipanggil di updateUI
+      // calculateAndDisplayDailyBudget(); // Panggil fungsi baru di sini, tapi akan dipanggil di updateFinancialSummary
     }
 
     // Fungsi untuk menghasilkan warna acak yang cerah
@@ -1289,6 +1455,17 @@
           <p class="text-xs mt-1 ${budgetTextColor}">Sisa Anggaran: ${formatRupiah(remainingBudget)}</p>
         </div>
       `;
+      // Tambahkan elemen untuk Anggaran Harian Ideal di sini
+      summaryGrid.innerHTML += `
+        <div class="bg-blue-50 p-4 rounded-lg shadow-sm border-l-4 border-blue-600 md:col-span-full lg:col-span-1">
+          <h3 class="font-semibold text-gray-700 text-sm">Anggaran Harian Ideal (Dinamis)</h3>
+          <p class="text-xl font-bold mt-1" id="daily-budget-display">Rp0</p>
+          <p class="text-xs text-gray-500" id="daily-budget-info"></p>
+        </div>
+      `;
+
+      // Panggil fungsi anggaran harian dinamis setelah semua data ringkasan dihitung
+      calculateAndDisplayDailyBudget(totalBudgetedExpense, totalActualExpenseForBudget);
     }
 
     // Update daftar transaksi
@@ -1377,7 +1554,7 @@
         document.getElementById('search-transaksi').value = '';
         // Set 'Semua' filter button as active by default
         const allFilterButton = document.querySelector('#transaksi-section .filter-button[onclick*="\'semua\'"]');
-        filterTransaksi('semua', allFilterButton);
+        filterTransaksi('semua', allFilterButton); // <--- PASTIKAN BARIS INI ADA DAN BENAR
       }
     }
 
@@ -1421,12 +1598,7 @@
       sortedTransaksi.forEach((transaksi, index) => {
         const tDate = new Date(transaksi.tanggal);
         const dariDate = filterDari ? new Date(filterDari) : null;
-        let sampaiDate = null;
-        if (filterSampai) {
-            sampaiDate = new Date(filterSampai);
-            // Set waktu sampaiDate ke akhir hari (23:59:59.999)
-            sampaiDate.setHours(23, 59, 59, 999);
-        }
+        const sampaiDate = filterSampai ? new Date(sampai) : null;
 
         const jenisTransaksi = transaksi.jenis.toLowerCase();
         const keterangan = (transaksi.keterangan || '').toLowerCase();
@@ -1529,6 +1701,7 @@
       saveDatabase();
       calculateAndStoreMonthlyInitialBalance();
       updateUI();
+      filterTransaksi('semua'); // <--- TAMBAHKAN BARIS INI
 
       this.reset();
       document.getElementById('jenis-transaksi').value = 'pemasukan';
@@ -1611,6 +1784,7 @@
         saveDatabase();
         calculateAndStoreMonthlyInitialBalance();
         updateUI();
+        filterTransaksi('semua'); // <--- TAMBAHKAN BARIS INI
         closeModal();
 
         showNotification('Perubahan transaksi berhasil disimpan!', 'success');
@@ -1632,6 +1806,7 @@
         saveDatabase();
         calculateAndStoreMonthlyInitialBalance();
         updateUI();
+        filterTransaksi('semua'); // <--- TAMBAHKAN BARIS INI
         showNotification('Transaksi berhasil dihapus!', 'success');
       }
     }
@@ -2694,6 +2869,60 @@
         updateUI();
         renderLoansList();
         showNotification('Pinjaman berhasil dihapus.', 'success');
+      }
+    }
+
+    // FUNGSI BARU: Menghitung dan Menampilkan Anggaran Harian Ideal (Dinamis)
+    function calculateAndDisplayDailyBudget(totalBudgetedExpense, totalActualExpenseForBudget) {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth(); // 0-indexed
+      const day = today.getDate(); // 1-indexed
+
+      const currentMonthKey = `${year}-${(month + 1).toString().padStart(2, '0')}`;
+
+      // Total anggaran bulanan (sudah dihitung di updateFinancialSummary)
+      const totalBudget = totalBudgetedExpense;
+      // Total pengeluaran aktual bulan ini (sudah dihitung di updateFinancialSummary)
+      const actualExpense = totalActualExpenseForBudget;
+
+      const remainingBudget = totalBudget - actualExpense;
+
+      // Hitung jumlah hari di bulan ini
+      const lastDayOfMonth = new Date(year, month + 1, 0).getDate(); // e.g., 31 for August
+
+      // Hitung sisa hari di bulan ini (termasuk hari ini)
+      const remainingDays = lastDayOfMonth - day + 1;
+
+      let dailyBudget = 0;
+      let infoText = '';
+
+      if (totalBudget <= 0) {
+          dailyBudget = 0;
+          infoText = `Belum ada anggaran bulanan yang ditetapkan.`;
+      } else if (remainingDays <= 0) {
+          dailyBudget = 0;
+          infoText = `Bulan telah berakhir atau sisa hari 0.`;
+      } else {
+          dailyBudget = remainingBudget / remainingDays;
+          infoText = `Dari sisa anggaran ${formatRupiah(remainingBudget)} untuk ${remainingDays} hari tersisa.`;
+      }
+
+      const dailyBudgetDisplay = document.getElementById('daily-budget-display');
+      const dailyBudgetInfo = document.getElementById('daily-budget-info');
+
+      if (dailyBudgetDisplay && dailyBudgetInfo) {
+          dailyBudgetDisplay.textContent = formatRupiah(dailyBudget);
+          dailyBudgetInfo.textContent = infoText;
+
+          // Opsional: Beri warna jika anggaran harian negatif
+          if (dailyBudget < 0) {
+              dailyBudgetDisplay.classList.add('text-red-600');
+              dailyBudgetDisplay.classList.remove('text-green-600');
+          } else {
+              dailyBudgetDisplay.classList.add('text-green-600');
+              dailyBudgetDisplay.classList.remove('text-red-600');
+          }
       }
     }
 
